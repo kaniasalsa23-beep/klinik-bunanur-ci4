@@ -1,0 +1,1609 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+html{
+scroll-behavior:smooth;
+}
+
+body{
+font-family:'Poppins',sans-serif;
+color:#222;
+overflow-x:hidden;
+background:
+linear-gradient(135deg,#f8d7dd 0%,#eab0bd 100%);
+position:relative;
+}
+
+body:before,
+body:after{
+content:"";
+position:fixed;
+border-radius:50%;
+filter:blur(120px);
+z-index:-1;
+animation:blobMove 18s infinite alternate ease-in-out;
+}
+
+body:before{
+width:550px;
+height:550px;
+background:rgba(183,110,121,.25);
+top:-120px;
+left:-100px;
+}
+
+body:after{
+width:500px;
+height:500px;
+background:rgba(255,255,255,.35);
+right:-120px;
+bottom:-100px;
+animation-duration:22s;
+}
+
+.hero::before{
+content:"";
+position:absolute;
+width:350px;
+height:350px;
+background:rgba(255,255,255,.18);
+border-radius:50%;
+right:6%;
+top:70px;
+filter:blur(60px);
+animation:blobMove 15s infinite alternate;
+}
+
+@keyframes blobMove{
+from{
+transform:translate(0,0) scale(1);
+}
+to{
+transform:translate(50px,-30px) scale(1.15);
+}
+}
+
+
+/* =========================
+NAVBAR
+========================= */
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:16px 70px;
+background:rgba(255,255,255,.75);
+backdrop-filter:blur(16px);
+border-bottom:1px solid #c8929d;
+position:sticky;
+top:0;
+z-index:999;
+box-shadow:0 6px 25px rgba(0,0,0,.05);
+}
+
+.nav-left{
+display:flex;
+align-items:center;
+gap:14px;
+}
+
+.logo{
+width:56px;
+height:56px;
+border-radius:50%;
+object-fit:cover;
+border:2px solid #b76e79;
+}
+
+.nav-left h2{
+color:#b76e79;
+font-size:28px;
+font-weight:700;
+letter-spacing:1px;
+}
+
+.nav-menu{
+display:flex;
+gap:45px;
+}
+
+.nav-menu a{
+text-decoration:none;
+color:#b76e79;
+font-weight:600;
+position:relative;
+}
+
+.nav-menu a:after{
+content:'';
+position:absolute;
+bottom:-7px;
+left:0;
+width:0;
+height:2px;
+background:#b76e79;
+transition:.35s;
+}
+
+.nav-menu a:hover:after{
+width:100%;
+}
+
+
+/* =========================
+PROFILE
+========================= */
+
+.profile-area{
+position:relative;
+}
+
+.avatar{
+width:48px;
+height:48px;
+border-radius:50%;
+object-fit:cover;
+border:2px solid #b76e79;
+cursor:pointer;
+transition:.3s;
+}
+
+.avatar:hover{
+transform:scale(1.08);
+}
+
+.profile-dropdown{
+display:none;
+position:absolute;
+right:0;
+top:70px;
+width:280px;
+background:rgba(255,255,255,.95);
+backdrop-filter:blur(20px);
+border-radius:25px;
+overflow:hidden;
+box-shadow:0 20px 50px rgba(0,0,0,.12);
+}
+
+.profile-top{
+padding:30px;
+text-align:center;
+}
+
+.profile-top img{
+width:80px;
+height:80px;
+border-radius:50%;
+margin-bottom:12px;
+border:3px solid #c8929d;
+}
+
+.profile-top h4{
+font-size:22px;
+}
+
+.profile-top p{
+color:#777;
+font-size:14px;
+}
+
+.profile-links{
+padding:15px 20px 25px;
+}
+
+.profile-links a{
+display:block;
+padding:14px 18px;
+border-radius:14px;
+margin-bottom:12px;
+text-decoration:none;
+font-weight:600;
+}
+
+.profil-btn{
+background:#f9eef1;
+color:#b76e79;
+}
+
+.logout-btn{
+background:#b76e79;
+color:#fff;
+}
+
+/* =========================
+HERO
+========================= */
+
+.hero{
+position:relative;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:90px 10%;
+min-height:100vh;
+gap:60px;
+background:
+linear-gradient(
+120deg,
+rgba(255,255,255,.20),
+rgba(255,255,255,.05)
+);
+}
+
+.hero-img{
+width:45%;
+display:flex;
+justify-content:center;
+}
+
+@keyframes floatHero{
+0%,100%{
+transform:translateY(0);
+}
+50%{
+transform:translateY(-20px);
+}
+}
+
+.hero-text{
+width: 100%;
+}
+
+.badge{
+display:inline-block;
+padding:12px 22px;
+background:rgba(255,255,255,.6);
+backdrop-filter:blur(12px);
+border-radius:30px;
+margin-bottom:25px;
+color:#8d5c65;
+font-weight:600;
+}
+
+/* Penyesuaian khusus teks dan tombol Hero */
+.hero-text h1 {
+    font-size: 68px; /* Ukuran font diperbesar sesuai Gambar 2 */
+    line-height: 1.1;
+    font-family: 'Playfair Display', serif;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+.hero-text h2 {
+    font-size: 28px;
+    color: #562b33; /* Warna rose gold kecokelatan */
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* MEMBERIKAN JARAK ANTARA TEKS DAN TOMBOL */
+.hero-text p {
+    font-size: 20px;
+    line-height: 1.9;
+    margin-bottom: 45px; /* Ditambah agar jarak ke tombol lebih jauh */
+    color: #352326;
+}
+
+.btn {
+    display: inline-block;
+    padding: 15px 34px;
+    background: #b8616b; /* Warna Dusty Rose sesuai tema */
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 600;
+    margin-top: 10px; /* Tambahan margin atas ekstra */
+    box-shadow: 0 10px 25px rgba(183, 110, 121, 0.3);
+    transition: .35s;
+}
+
+.btn:hover {
+    background: #a65d67;
+    transform: translateY(-3px);
+}
+
+/* =========================
+SECTION GLOBAL
+========================= */
+
+section{
+position:relative;
+z-index:2;
+}
+
+/* =========================
+TENTANG
+(no animation)
+========================= */
+
+.tentang{
+padding:110px 0;
+}
+
+.tentang-box{
+width:90%;
+max-width:1150px;
+margin:auto;
+padding:60px;
+background:rgba(255,255,255,.75);
+backdrop-filter:blur(18px);
+border-radius:35px;
+box-shadow:0 15px 45px rgba(0,0,0,.05);
+}
+
+.title{
+background:#b76e79;
+color:#fff;
+padding:20px;
+text-align:center;
+font-size:42px;
+border-radius:18px;
+margin-bottom:55px;
+font-family:'Playfair Display',serif;
+}
+
+.tentang-content{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:60px;
+}
+
+.tentang-text{
+width:58%;
+}
+
+.tentang-text h1{
+font-size:50px;
+margin-bottom:25px;
+font-family:'Playfair Display',serif;
+}
+
+.tentang-text p{
+font-size:20px;
+line-height:1.9;
+}
+
+.tentang-image{
+width:42%;
+display:flex;
+justify-content:center;
+}
+
+.organic-frame{
+width:300px;
+height:360px;
+padding:14px;
+background:linear-gradient(135deg,#c8929d,#f1dde2);
+border-radius:60% 40% 55% 45%/45% 60% 40% 55%;
+box-shadow:0 20px 40px rgba(0,0,0,.12);
+}
+
+.organic-frame img{
+width:100%;
+height:100%;
+object-fit:cover;
+border-radius:inherit;
+}
+
+/* =========================
+SLIDER PREMIUM
+========================= */
+
+.tentang-slider{
+width:100%;
+height:85vh;
+position:relative;
+overflow:hidden;
+}
+
+/* ================= SLIDER MODERN ================= */
+
+.slider{
+position:relative;
+width:100%;
+height:500px;
+overflow:hidden;
+border-radius:25px;
+}
+
+.slides {
+    display: flex;
+    transition: 0.6s ease;
+    height: 100%;
+    width: 100%; /* Pastikan lebar container slider penuh */
+}
+
+.slide{
+min-width:100%;
+height:100%;
+position:relative;
+}
+
+.slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block; /* Pastikan gambar tidak tersembunyi */
+}
+
+/* Gaya Kotak Teks Pink Glassmorphism */
+.overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    /* Warna pink transparan (RGBA) */
+    background: rgba(255, 192, 203, 0.25); 
+    
+    /* Efek Kaca (Blur Background) */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    
+    /* Border halus agar efek kaca lebih tegas */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    
+    color: white;
+    padding: 40px 60px;
+    border-radius: 25px;
+    text-align: center;
+    box-shadow: 0 8px 32px 0 rgba(183, 110, 121, 0.3); /* Shadow warna rose gold */
+    width: 80%;
+    max-width: 600px;
+}
+
+/* Judul Layanan Kami */
+.overlay h1 {
+    font-size: 45px;
+    margin-bottom: 10px;
+    font-family: 'Playfair Display', serif;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2); /* Agar teks lebih mudah dibaca */
+}
+
+/* Deskripsi yang diinput bidan */
+.overlay p {
+    font-size: 20px;
+    margin-bottom: 30px;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+}
+
+/* Tombol Lihat Detail */
+.btn-slide {
+    display: inline-block;
+    padding: 14px 35px;
+    background: #b76e79; /* Warna pink tema Bunanur */
+    color: white;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: 0.3s;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.btn-slide:hover {
+    background: #a36570;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+/* BUTTON */
+.prev, .next{
+position:absolute;
+top:50%;
+transform:translateY(-50%);
+background:rgba(255,255,255,0.6);
+border:none;
+font-size:28px;
+padding:10px 15px;
+cursor:pointer;
+border-radius:10px;
+}
+
+.prev{ left:20px; }
+.next{ right:20px; }
+
+/* DOT */
+.dots{
+position:absolute;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:10px;
+}
+
+.dots span{
+width:12px;
+height:12px;
+background:#fff;
+opacity:.5;
+border-radius:50%;
+cursor:pointer;
+}
+
+.dots span.active{
+opacity:1;
+}
+
+/* =========================
+LAYANAN
+========================= */
+
+.layanan{
+padding:100px 8%;
+text-align:center;
+}
+
+.layanan-title,
+.testimoni-title{
+width:80%;
+margin:auto auto 60px;
+background:#b76e79;
+color:white;
+padding:22px;
+font-size:38px;
+border-radius:18px;
+}
+
+.testi-grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:30px;
+}
+
+.testi-card{
+background:#fff;
+padding:30px;
+border-radius:24px;
+box-shadow:0 10px 25px rgba(0,0,0,.08);
+text-align:center;
+}
+
+.testi-card img{
+width:90px;
+height:90px;
+border-radius:50%;
+object-fit:cover;
+margin-bottom:15px;
+}
+
+.layanan-container{
+display:flex;
+justify-content:center;
+gap:35px;
+flex-wrap:wrap;
+}
+
+.layanan-card{
+width:300px;
+padding:20px;
+background:rgba(255,255,255,.75);
+backdrop-filter:blur(18px);
+border-radius:28px;
+box-shadow:0 15px 35px rgba(0,0,0,.07);
+transition:.4s;
+}
+
+.layanan-card:hover{
+transform:translateY(-12px);
+}
+
+.layanan-card img{
+width:100%;
+height:220px;
+object-fit:cover;
+border-radius:18px;
+}
+
+.layanan-card h3{
+font-size:28px;
+margin:20px 0;
+}
+
+.btn-layanan{
+display:inline-block;
+padding:12px 22px;
+background:#b76e79;
+color:#fff;
+text-decoration:none;
+border-radius:12px;
+}
+
+/* =========================
+   CSS TESTIMONI PREMIUM (STACKED)
+   ========================= */
+
+.testimoni-section {
+    padding: 100px 0;
+    /* --- INI BAGIAN BACKGROUND-NYA --- */
+    background: linear-gradient(135deg, #fdf4f5 0%, #fae1e6 100%); 
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.container-testi {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.testi-title {
+    font-family: 'Playfair Display', serif; /* Font mewah seperti Judul Hero */
+    color: #844d56;
+    font-size: 3.2rem;
+    margin-bottom: 70px;
+    position: relative;
+    display: inline-block;
+}
+
+.testi-title::after {
+    content: '';
+    width: 70px;
+    height: 3px;
+    background: #72434b;
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+/* Slider Container */
+.testimoni-swiper {
+    padding: 20px 20px 70px 20px; /* Jarak untuk navigasi */
+}
+
+/* KARTU TESTIMONI PREMIUM STACKED */
+.testi-card-premium {
+    background: #ffffff;
+    border-radius: 30px;
+    padding: 40px;
+    margin: 15px; /* Jarak antar kartu saat slider jalan */
+    
+    /* Layout horizontal: Profil di kiri, Konten di kanan */
+    display: flex;
+    gap: 30px;
+    text-align: left; /* Teks di kanan rata kiri */
+    
+    height: auto;
+    min-height: 280px; /* Menjaga tinggi minimum agar sejajar */
+    position: relative;
+    
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: 0 10px 30px rgba(172, 124, 132, 0.08); /* Shadow warna rose gold tipis */
+    border: 1px solid rgba(172, 124, 132, 0.05);
+}
+
+.testi-card-premium:hover {
+    transform: translateY(-10px) scale(1.01);
+    box-shadow: 0 15px 45px rgba(172, 124, 132, 0.15);
+}
+
+/* BAGIAN KIRI: PROFIL BUNDA */
+.testi-left-profile {
+    flex-shrink: 0;
+    text-align: center;
+    width: 100px;
+}
+
+.avatar-bunda-testi {
+    width: 85px;
+    height: 85px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #f8d7dd; /* Border rose gold sangat muda */
+    margin-bottom: 10px;
+}
+
+/* BAGIAN KANAN: KONTEN */
+.testi-right-content {
+    flex-grow: 1;
+}
+
+.bunda-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    color: #4c3333;
+    font-size: 1.1rem;
+    margin-bottom: 3px;
+    text-transform: capitalize;
+}
+
+.testi-subinfo {
+    font-size: 0.8rem;
+    color: #ac7c84;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    margin-bottom: 15px;
+}
+
+/* BINTANG KUNING ECO */
+.stars-container-eco {
+    color: #ffb400; /* Warna kuning emas */
+    font-size: 1.1rem;
+    margin-bottom: 18px;
+}
+
+/* TEKS REVIEW */
+.bunda-review-text {
+    font-family: 'Poppins', sans-serif;
+    color: #5d4044;
+    font-size: 1rem;
+    line-height: 1.8;
+    font-weight: 300;
+    font-style: italic; /* Gaya e-commerce review */
+    margin-bottom: 25px;
+}
+
+/* FOTO BUKTI ECO */
+.testi-proof-img-eco {
+    width: 110px;
+    height: 110px;
+    border-radius: 18px;
+    object-fit: cover;
+    border: 2px solid #f8d7dd;
+    transition: 0.3s;
+}
+
+.testi-proof-img-eco:hover {
+    transform: scale(1.06) rotate(1deg);
+}
+
+/* Warna Navigasi Swiper (Warna Pink Bunanur) */
+.swiper-pagination-bullet-active {
+    background: #ac7c84 !important;
+    width: 25px !important;
+    border-radius: 10px !important;
+}
+
+.swiper-button-next, .swiper-button-prev {
+    color: #8e545e !important;
+    transform: scale(0.6);
+}
+
+/* Style Data Kosong */
+.empty-testi {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: 1px dashed #ac7c84;
+    color: #ac7c84;
+}
+
+.empty-testi i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+/* =========================
+RESPONSIVE
+========================= */
+
+@media(max-width:950px){
+
+.nav-menu{
+display:none;
+}
+
+.hero,
+.tentang-content{
+flex-direction:column;
+text-align:center;
+}
+
+.hero-img,
+.hero-text,
+.tentang-text,
+.tentang-image{
+width:100%;
+}
+
+.hero-text h1{
+font-size:52px;
+}
+}
+
+.hero-glass:hover{
+transform:rotateY(0deg) rotateX(0deg) scale(1.05);
+}
+
+.hero-img{
+width:45%;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+/* ORGANIC SHAPE (TIDAK SEMPURNA) */
+.hero-organic{
+width:460px;
+height:460px;
+
+background:rgba(255,255,255,0.25);
+backdrop-filter:blur(20px);
+
+border-radius:60% 40% 55% 45% / 45% 60% 40% 55%;
+
+box-shadow:0 30px 70px rgba(0,0,0,.18);
+
+overflow:hidden; /* 🔥 WAJIB */
+position:relative;
+
+animation:floatHero 6s ease-in-out infinite;
+}
+
+/* GAMBAR DI DALAM */
+.hero-organic img{
+width:100%;
+height:100%;
+
+object-fit:cover; /* 🔥 INI KUNCI */
+display:block;
+}
+
+/* ANIMASI FLOAT */
+@keyframes floatHero{
+0%,100%{
+transform:translateY(0) scale(1);
+}
+50%{
+transform:translateY(-15px) scale(1.03);
+}
+}
+
+/* HOVER EFFECT (3D FEEL) */
+.hero-organic:hover{
+transform:scale(1.05) rotate(1deg);
+}
+
+.kontak-box{
+background:rgba(255,255,255,0.7);
+backdrop-filter:blur(15px);
+padding:40px;
+border-radius:25px;
+width:60%;
+margin:auto;
+text-align:center;
+font-size:18px;
+box-shadow:0 15px 40px rgba(0,0,0,.1);
+}
+
+.hero-gallery{
+    position:relative;
+    width:100%;
+    height:100vh;
+    overflow:hidden;
+}
+
+.main-slider{
+    display:flex;
+    height:100%;
+    width:100%;
+    transition:transform .8s ease;
+}
+
+.slide-group{
+    width:100%;
+    height:100%;
+    flex-shrink:0;
+}
+
+.grid-container{
+    width:100%;
+    height:100%;
+
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat(2,1fr);
+    gap:0;
+}
+
+.grid-item{
+    overflow:hidden;
+    position:relative;
+}
+
+.grid-item img,
+.grid-item video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+}
+
+/* ================= HERO OVERLAY ================= */
+
+.hero-overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:10;
+}
+
+.hero-card{
+    width:720px;
+    max-width:90%;
+    padding:45px 50px;
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+
+    background:rgba(255,255,255,.18);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    border:1px solid rgba(255,255,255,.35);
+    border-radius:30px;
+
+    box-shadow:0 20px 45px rgba(0,0,0,.12);
+}
+
+.hero-card h1{
+    font-family:'Playfair Display', serif;
+    font-size:58px;
+    font-weight:700;
+    color:#474747;
+
+    text-align:center;
+    line-height:1.15;
+
+    margin:0 0 35px;
+    max-width:100%;
+}
+
+.btn-explore{
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+
+    width:240px;
+    height:62px;
+
+    background:#9b646b;
+    color:#fff;
+    text-decoration:none;
+
+    border-radius:50px;
+    font-size:18px;
+    font-weight:600;
+
+    transition:.3s;
+}
+
+.btn-explore:hover{
+    background:#88545b;
+    transform:translateY(-3px);
+}
+
+.overlay-content {
+    /* Efek Glassmorphism Pink */
+    background: rgba(255, 192, 203, 0.25); /* Warna pink transparan */
+    backdrop-filter: blur(15px); /* Membuat efek kaca buram */
+    -webkit-backdrop-filter: blur(15px);
+    
+    /* Border halus agar efek kaca makin nyata */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 50px 80px;
+    text-align: center;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1); /* Shadow lembut */
+    max-width: 80%;
+}
+
+.overlay-content h1 {
+    font-family: 'Playfair Display', serif;
+    color: #4a342e; /* Warna cokelat tua tetap menjadi warna utama */
+    font-size: 52px;
+    font-weight: 700;
+    margin-bottom: 25px;
+    letter-spacing: 0.5px;
+    
+    text-shadow: 
+        2px 2px 4px rgba(255, 255, 255, 0.8), /* Cahaya putih di belakang teks */
+        -1px -1px 0px rgba(255, 255, 255, 0.5); /* Outline tipis agar lebih tegas */
+}
+
+.btn-explore {
+    /* Layout & Ukuran */
+    display: inline-block;
+    padding: 12px 40px;
+    margin-top: 20px;
+    
+    /* Warna & Teks sesuai gambar */
+    background-color: #8d6468; /* Warna cokelat-pink gelap */
+    color: #ffffff !important; /* Teks putih */
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 500;
+    
+    /* Bentuk Kapsul */
+    border-radius: 50px;
+    
+    /* Efek Interaktif */
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: none;
+    cursor: pointer;
+}
+
+.btn-explore:hover {
+    background-color: #7a5458; /* Warna sedikit lebih gelap saat disentuh */
+    transform: translateY(-2px); /* Efek melayang sedikit */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsif untuk HP */
+@media (max-width: 768px) {
+    .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .overlay-content h1 {
+        font-size: 24px;
+    }
+}
+
+/* =========================================
+   CSS SECTION TESTIMONI - FINAL PREMIUM UPGRADE
+   (GRADIENT PINK MODERN)
+   ========================================= */
+
+.testimoni-section {
+    padding: 100px 0;
+    /* --- INI PERBAIKAN FINALNYA, KANIA! --- */
+    /* Gradien pink lembut yang elegan */
+    background: linear-gradient(135deg, #fdf4f5 0%, #fae1e6 100%);
+    /* ------------------------------------- */
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Judul (Playfair Display seperti di referensi) */
+.testimoni-section h2 {
+    font-family: 'Playfair Display', serif;
+    color: #ac7c84;
+    font-size: 3rem;
+    margin-bottom: 60px;
+    position: relative;
+    display: inline-block;
+}
+
+.testimoni-section h2::after {
+    content: '';
+    width: 60px;
+    height: 3px;
+    background: #ac7c84;
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+/* Container Slider Swiper */
+.testimoni-swiper {
+    padding: 20px 20px 70px 20px;
+}
+
+/* Kartu Ulasan Modern (Glassmorphism Effect) */
+.testi-card-final {
+    /* Sedikit transparan agar gradien background menembus lembut */
+    background: rgba(255, 255, 255, 0.7); 
+    border: 1px solid rgba(172, 124, 132, 0.2);
+    border-radius: 25px;
+    padding: 40px 30px;
+    margin: 15px; /* Jarak antar kartu saat slider berjalan */
+    height: 100%;
+    min-height: 280px; /* Menjaga tinggi agar sejajar */
+    transition: all 0.4s ease;
+    box-shadow: 0 15px 35px rgba(172, 124, 132, 0.08);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.testi-card-final:hover {
+    transform: translateY(-12px);
+    background: rgba(255, 255, 255, 0.9); 
+    box-shadow: 0 20px 45px rgba(172, 124, 132, 0.15);
+}
+
+/* Warna teks di dalam kartu */
+.testi-text {
+    font-family: 'Poppins', sans-serif;
+    font-style: italic;
+    color: #5d4044;
+    line-height: 1.8;
+    font-size: 15px;
+    margin-bottom: 25px;
+}
+
+.testi-name {
+    font-weight: 700;
+    color: #ac7c84;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Warna Navigasi & Bullets Swiper */
+.swiper-pagination-bullet-active {
+    background: #ac7c84 !important;
+}
+
+.swiper-button-next, .swiper-button-prev {
+    color: #ac7c84 !important;
+    transform: scale(0.6);
+}
+
+/* Responsif HP */
+@media (max-width: 600px) {
+    .testi-card-premium {
+        flex-direction: column; /* Jadi vertikal di HP */
+        align-items: center;
+        text-align: center;
+    }
+}
+
+/* =========================================
+   CSS FOOTER (GAYA GAMBAR 2)
+   ========================================= */
+.footer-modern{
+    background:#aa636c;
+    padding:70px 0 25px;
+    color:#fff;
+}
+
+.footer-container{
+    width:90%;
+    max-width:1200px;
+    margin:auto;
+}
+
+.footer-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:60px;
+    margin-bottom:45px;
+    align-items:flex-start;
+}
+
+.footer-brand h3,
+.footer-contact h4,
+.footer-social h4{
+    font-size:24px;
+    margin-bottom:22px;
+    font-weight:700;
+    color:#fff;
+}
+
+.footer-brand p{
+    line-height:1.9;
+    font-size:15px;
+    opacity:.9;
+}
+
+.contact-list,
+.social-list{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+}
+
+.contact-item,
+.social-item{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    color:#fff;
+    text-decoration:none;
+    line-height:1.7;
+    transition:.3s;
+}
+
+.contact-item:hover,
+.social-item:hover{
+    transform:translateX(6px);
+    opacity:.85;
+}
+
+.contact-item i,
+.social-item i{
+    width:22px;
+    font-size:18px;
+    margin-top:2px;
+}
+
+.footer-copyright{
+    text-align:center;
+    border-top:1px solid rgba(255,255,255,.18);
+    padding-top:25px;
+    font-size:14px;
+    opacity:.85;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:768px){
+
+.footer-grid{
+    grid-template-columns:1fr;
+    text-align:center;
+    gap:35px;
+}
+
+.contact-item,
+.social-item{
+    justify-content:center;
+}
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* 2. Container Kartu Utama */
+.hero-card {
+    /* Efek Glassmorphism */
+    background: rgba(255, 255, 255, 0.2) !important; /* Putih transparan */
+    backdrop-filter: blur(15px) !important; /* EFEK BLUR KACA */
+    -webkit-backdrop-filter: blur(15px);
+    
+    /* Border & Bayangan */
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    padding: 60px 40px !important;
+    border-radius: 30px !important;
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+    
+    /* Posisi agar di tengah background */
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* 3. Font Judul (Aesthetic) */
+.hero-card h1 {
+    font-family: 'Playfair Display', serif !important;
+    font-size: 42px !important;
+    color: #444 !important;
+    margin-bottom: 30px !important;
+    text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.5);
+}
+
+/* 4. Tombol Jelajahi Kami (Kembali ke Cokelat Pink) */
+.btn-explore {
+    display: inline-block !important;
+    padding: 14px 45px !important;
+    background-color: #9a555c !important; /* Warna sesuai gambar kamu */
+    color: #ffffff !important;
+    text-decoration: none !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    border-radius: 50px !important;
+    transition: all 0.4s ease !important;
+    border: none !important;
+    box-shadow: 0 8px 20px rgba(141, 100, 104, 0.3) !important;
+}
+
+.btn-explore:hover {
+    background-color: #7a5458 !important;
+    transform: translateY(-5px) !important; /* Efek melayang saat hover */
+    box-shadow: 0 12px 25px rgba(141, 100, 104, 0.4) !important;
+}
+
+.testi-proof-img-eco {
+    transition: transform 0.3s ease;
+    cursor: pointer;
+    display: block;
+}
+.testi-proof-img-eco:hover {
+    transform: scale(1.1); /* Efek zoom saat foto disentuh */
+}
+
+/* =========================
+SUBJUDUL HERO MODERN
+========================= */
+
+.hero-subjudul{
+    font-family:'Poppins', sans-serif;
+    font-size:24px;
+    font-weight:500;
+    letter-spacing:0.3px;
+
+    color:#8d5c65;
+
+    margin-top:8px;
+    margin-bottom:22px;
+
+    position:relative;
+
+    display:inline-block;
+}
+
+/* garis premium kecil */
+.hero-subjudul::after{
+    content:'';
+    position:absolute;
+    left:0;
+    bottom:-10px;
+
+    width:65px;
+    height:3px;
+
+    background:linear-gradient(
+        90deg,
+        #b76e79,
+        #d8a2ab
+    );
+
+    border-radius:10px;
+}
+
+/* =========================
+DESKRIPSI HERO MODERN
+========================= */
+
+.hero-biografi{
+    margin-top:12px;
+    margin-bottom:42px;
+
+    font-family:'Poppins', sans-serif;
+    font-size:18px;
+    line-height:1.9;
+
+    color:#5f474b;
+
+    max-width:650px;
+
+    font-weight:400;
+    letter-spacing:0.2px;
+
+    text-align:left;
+
+    text-wrap:pretty;
+}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+
+.hero-subjudul{
+    font-size:20px;
+    text-align:center;
+    margin-bottom:14px;
+}
+
+.hero-biografi{
+    margin-top:8px;
+    margin-bottom:35px;
+
+    font-size:16px;
+    line-height:1.8;
+
+    text-align:center;
+
+    max-width:100%;
+}
+
+.hero-subjudul::after{
+    left:50%;
+    transform:translateX(-50%);
+}
+}
+
+/* =========================
+TENTANG KAMI FINAL RAPIH
+========================= */
+
+.tentang{
+    padding:110px 0;
+}
+
+.tentang-box{
+    width:90%;
+    max-width:1150px;
+    margin:auto;
+    padding:60px;
+    background:rgba(255,255,255,.75);
+    backdrop-filter:blur(18px);
+    border-radius:35px;
+    box-shadow:0 15px 45px rgba(0,0,0,.05);
+}
+
+.title{
+    background:#b76e79;
+    color:#fff;
+    padding:20px;
+    text-align:center;
+    font-size:42px;
+    border-radius:18px;
+    margin-bottom:55px;
+    font-family:'Playfair Display',serif;
+}
+
+.tentang-content{
+    display:flex;
+    align-items:center;
+    gap:60px;
+}
+
+/* FOTO */
+.tentang-image{
+    width:35%;
+    display:flex;
+    justify-content:center;
+}
+
+.organic-frame{
+    width:320px;
+    height:400px;
+    overflow:hidden;
+    background:linear-gradient(135deg,#c8929d,#f1dde2);
+    border-radius:60% 40% 55% 45%/45% 60% 40% 55%;
+    box-shadow:0 20px 40px rgba(0,0,0,.12);
+    padding:12px;
+}
+
+.organic-frame img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    border-radius:inherit;
+}
+
+/* TEKS BIOGRAFI */
+.tentang-text{
+    width:65%;
+}
+
+.tentang-biografi{
+    font-size:20px;
+    line-height:2;
+    color:#5b4448;
+    text-align:justify;
+    font-weight:400;
+}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+
+    .tentang-content{
+        flex-direction:column;
+        text-align:center;
+    }
+
+    .tentang-image,
+    .tentang-text{
+        width:100%;
+    }
+
+    .tentang-biografi{
+        text-align:center;
+        font-size:18px;
+        line-height:1.9;
+    }
+
+    .organic-frame{
+        width:260px;
+        height:320px;
+    }
+}
+
+.footer-grid{
+    display:flex;
+    justify-content:center; /* posisi tengah */
+    align-items:flex-start;
+    gap:120px; /* jarak antar kolom */
+    margin-bottom:45px;
+    flex-wrap:wrap;
+    text-align:left;
+}
+
+/* ukuran box agar seimbang */
+.footer-contact,
+.footer-social{
+    width:350px;
+}
+
+/* heading */
+.footer-contact h4,
+.footer-social h4{
+    font-size:30px;
+    margin-bottom:25px;
+    font-weight:700;
+    color:#fff;
+}
+
+/* list */
+.contact-list,
+.social-list{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+}
+
+/* item */
+.contact-item,
+.social-item{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    color:#fff;
+    text-decoration:none;
+    line-height:1.8;
+    transition:.3s;
+    font-size:18px;
+}
+
+/* hover modern */
+.contact-item:hover,
+.social-item:hover{
+    transform:translateX(6px);
+    opacity:.88;
+}
+
+/* icon */
+.contact-item i,
+.social-item i{
+    width:24px;
+    font-size:20px;
+    margin-top:3px;
+}
+
+/* responsive HP */
+@media(max-width:768px){
+
+.footer-grid{
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    gap:40px;
+}
+
+.footer-contact,
+.footer-social{
+    width:100%;
+    max-width:350px;
+}
+
+.contact-item,
+.social-item{
+    justify-content:center;
+}
+}
+
+.testi-proof-container{
+    margin-top:15px;
+}
+
+.testi-proof-img-eco{
+    width:100%;
+    height:180px;
+    object-fit:cover;
+    border-radius:15px;
+    border:2px solid #f3d8df;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.testi-proof-img-eco:hover{
+    transform:scale(1.03);
+}
+
+.empty-testi{
+    text-align:center;
+    padding:30px;
+}
+

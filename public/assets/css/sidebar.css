@@ -1,0 +1,196 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:'Poppins',sans-serif;
+background:
+linear-gradient(
+135deg,
+#f7dde3 0%,
+#efd0d6 100%
+);
+}
+
+
+/* TOPBAR */
+
+.topbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:35px;
+}
+
+.topbar h2{
+font-size:32px;
+color:#5e3c44;
+font-weight:700;
+}
+
+.profile-img{
+width:55px;
+height:55px;
+border-radius:50%;
+object-fit:cover;
+border:3px solid #fff;
+box-shadow:0 8px 20px rgba(0,0,0,.08);
+}
+
+
+
+/* SUMMARY CARD */
+
+.grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:25px;
+margin-bottom:35px;
+}
+
+.card{
+background:rgba(255,255,255,.92);
+backdrop-filter:blur(16px);
+
+padding:30px;
+border-radius:26px;
+
+box-shadow:
+0 12px 30px rgba(0,0,0,.06);
+
+transition:.35s;
+}
+
+.card:hover{
+transform:translateY(-8px);
+}
+
+.card-icon{
+width:60px;
+height:60px;
+display:flex;
+align-items:center;
+justify-content:center;
+
+border-radius:18px;
+background:#f8e8ec;
+
+font-size:28px;
+color:#b76e79;
+margin-bottom:18px;
+}
+
+.card h3{
+font-size:24px;
+margin-bottom:10px;
+color:#444;
+}
+
+.card p{
+font-size:15px;
+color:#777;
+line-height:1.7;
+}
+
+.btn{
+margin-top:16px;
+padding:12px 22px;
+background:#b76e79;
+border:none;
+border-radius:14px;
+color:#fff;
+font-weight:600;
+cursor:pointer;
+transition:.3s;
+}
+
+.btn:hover{
+background:#a55f6a;
+}
+
+
+
+/* TABLE */
+
+.table-box{
+background:white;
+padding:35px;
+border-radius:30px;
+
+box-shadow:
+0 12px 30px rgba(0,0,0,.06);
+}
+
+.table-box h3{
+font-size:26px;
+margin-bottom:20px;
+color:#5c3b43;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+overflow:hidden;
+border-radius:20px;
+}
+
+th{
+background:#b76e79;
+color:white;
+padding:16px;
+font-size:15px;
+}
+
+td{
+padding:15px;
+text-align:center;
+border-bottom:1px solid #eee;
+font-size:14px;
+}
+
+tr:hover td{
+background:#fcf6f7;
+}
+
+
+
+/* quick info */
+
+.welcome-box{
+background:
+linear-gradient(
+135deg,
+#b76e79,
+#c98a95
+);
+
+padding:35px;
+border-radius:30px;
+color:white;
+margin-bottom:30px;
+
+box-shadow:
+0 15px 35px rgba(183,110,121,.25);
+}
+
+.welcome-box h3{
+font-size:32px;
+margin-bottom:12px;
+}
+
+.welcome-box p{
+line-height:1.8;
+opacity:.95;
+}
+
+
+
+/* responsive */
+
+@media(max-width:1100px){
+.grid{
+grid-template-columns:1fr;
+}
+}
