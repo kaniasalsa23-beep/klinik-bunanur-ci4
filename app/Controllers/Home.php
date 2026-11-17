@@ -2256,18 +2256,18 @@ private function maskPhoneNumber(string $phone): string
 
 private function sendWhatsAppOtp(string $targetPhone, string $otp, string $role): bool
 {
-    $gatewayUrl = 'https://api.fonnte.com/send';
+    $gatewayUrl = env('WHATSAPP_GATEWAY_URL', 'https://api.fonnte.com/send');
 
-    // 1. Ambil token dari env('FONNTE_TOKEN'), fallback ke config('App')->fonnteToken atau WHATSAPP_API_TOKEN
+    // 1. Ambil token dari env('FONNTE_TOKEN'), fallback ke WHATSAPP_GATEWAY_TOKEN, config('App')->fonnteToken, atau WHATSAPP_API_TOKEN
     $apiToken = trim((string)env('FONNTE_TOKEN', ''));
+    if (empty($apiToken)) {
+        $apiToken = trim((string)env('WHATSAPP_GATEWAY_TOKEN', ''));
+    }
     if (empty($apiToken)) {
         $apiToken = trim((string)(config('App')->fonnteToken ?? ''));
     }
     if (empty($apiToken)) {
         $apiToken = trim((string)env('WHATSAPP_API_TOKEN', ''));
-    }
-    if (empty($apiToken)) {
-        $apiToken = '[TEMPEL_TOKEN_FONNTE_ANDA]';
     }
 
     $normTarget = normalize_whatsapp($targetPhone);

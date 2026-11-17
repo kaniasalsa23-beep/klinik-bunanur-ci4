@@ -211,7 +211,7 @@ class App extends BaseConfig
     {
         parent::__construct();
 
-        $this->fonnteToken = (string)env('FONNTE_TOKEN', (string)env('WHATSAPP_API_TOKEN', ''));
+        $this->fonnteToken = (string)env('FONNTE_TOKEN', (string)env('WHATSAPP_GATEWAY_TOKEN', (string)env('WHATSAPP_API_TOKEN', '')));
 
         // Dynamic base URL detection for XAMPP local & InfinityFree production
         if ($envBase = env('app.baseURL')) {
