@@ -37,6 +37,13 @@ Sistem dibangun di atas prinsip arsitektural **Keamanan Siber Berlapis (*Defense
 - **Moderasi Testimoni:** Persetujuan ulasan pasien sebelum ditampilkan ke etalase publik beranda klinik.
 - **Kelola Pasien & Pengaturan Profil:** Pemutakhiran biodata medis, nomor darurat WhatsApp, spesialisasi, dan jam operasional klinik.
 
+### 🔑 3. Pemulihan Kredensial via WhatsApp OTP (*Enterprise Password Recovery*)
+- **Verifikasi Identitas Ganda (Dual Identity Factor):** Pemulihan sandi mewajibkan Username akun serta Nomor WhatsApp terdaftar yang cocok dengan basis data (`bidan` / `pasien`), memitigasi *account takeover*.
+- **One-Time Password (OTP) 6-Digit Kriptografis:** Dihasilkan secara acak aman (`random_int(100000, 999999)`) dan disimpan dalam tabel `password_resets` dalam bentuk hash searah (`password_hash`), tidak pernah disimpan secara mentah (*plaintext*).
+- **Masa Berlaku 5 Menit & Proteksi Brute-Force OTP:** Setiap kode OTP memiliki waktu kedaluwarsa ketat 300 detik (*5-minute countdown*), dengan pembatasan maksimal 5 kali percobaan verifikasi yang salah sebelum sesi dikunci otomatis.
+- **WhatsApp Gateway & Sandbox Demo Interaktif:** Mendukung pengiriman pesan WhatsApp otomatis melalui WhatsApp Gateway API (`WHATSAPP_GATEWAY_URL`). Pada lingkungan lokal/evaluasi tanpa token API, sistem menyediakan panel *WhatsApp OTP Sandbox* dan tombol tautan langsung (`wa.me`) untuk verifikasi cepat.
+- **Enkripsi Bcrypt Cost 12 & Single-Use Reset Token:** Pengaturan kata sandi baru diverifikasi menggunakan token 64-karakter acak sekali pakai (*single-use*), mewajibkan aturan kata sandi kuat (min. 8 karakter, huruf besar, huruf kecil, angka, dan simbol khusus), serta melakukan pembatalan sesi (*cookie purge*) aktif lama.
+
 ---
 
 ## 🛠️ Tech Stack & Arsitektur Teknologi
@@ -199,10 +206,13 @@ Gunakan kredensial berikut untuk menguji seluruh hak akses dan alur kerja aplika
 | `encryption.key` | `hex2bin:<64_hex_digits>` | Kunci enkripsi 32-byte simetris untuk enkripsi token & sesi persisten. |
 | `JWT_SECRET` | *(string kriptografis 32+ char)* | *HMAC secret key* untuk signing dan verifikasi token JWT stateless. |
 | `logger.threshold` | `4` | Level pencatatan audit log aplikasi (`4 = info`, `9 = all`). |
+| `WHATSAPP_GATEWAY_URL` | `https://api.fonnte.com/send` | URL endpoint WhatsApp Gateway untuk pengiriman pesan OTP. |
+| `WHATSAPP_API_TOKEN` | *(opsional / string token)* | Kunci otorisasi WhatsApp Gateway (kosongkan untuk mengaktifkan Sandbox Demo Mode). |
+| `BIDAN_OFFICIAL_WHATSAPP` | `6281224841377` | Nomor WhatsApp resmi Bidan Nurhayati untuk verifikasi kredensial dan tautan `wa.me`. |
 
 ---
 
-## 🧪 Tabel Ringkasan Hasil Self-Testing Keamanan (6 Skenario)
+## 🧪 Tabel Ringkasan Hasil Self-Testing Keamanan (7 Skenario)
 
 Audit komprehensif dilakukan untuk memvalidasi ketahanan aplikasi terhadap serangan web utama:
 
@@ -214,6 +224,7 @@ Audit komprehensif dilakukan untuk memvalidasi ketahanan aplikasi terhadap seran
 | **4** | **Brute-Force & Credential Stuffing** | Eksekusi 10 permintaan login berturut-turut dengan kata sandi salah secara terprogram. | Rate Limiter (Throttler) membatasi akses maksimal 5 kegagalan dan memberlakukan jeda waktu. | Permintaan ke-6 diblokir dengan pesan waktu tunggu (*cooldown countdown*) dan Math CAPTCHA aktif. | **PASS** ✅ |
 | **5** | **CSP & Clickjacking (Header Audit)** | Pengujian penyematan situs ke dalam tag `<iframe>` domain asing dan analisis respon header via cURL. | Header keamanan `X-Frame-Options: SAMEORIGIN` dan `Content-Security-Policy` aktif pada setiap response. | Browser memblokir rendering iframe eksternal, MIME sniffing dinonaktifkan (`nosniff`). | **PASS** ✅ |
 | **6** | **Dependency & Secret Leak Audit** | Pemindaian secret token pada tracked files (`git status`), audit `.gitignore`, dan pemeriksaan integritas Composer. | Berkas `.env`, log, cache, dan dump database sensitif tidak terlacak dalam repositori Git. | Zero hardcoded API keys/passwords di kode sumber, `.env` terlindungi 100%. | **PASS** ✅ |
+| **7** | **WhatsApp OTP Password Recovery** | Pengujian alur lupa sandi, manipulasi nomor WhatsApp, serangan brute-force OTP 5 kali salah, serta kedaluwarsa waktu 5 menit. | Sistem memvalidasi kesesuaian nomor WhatsApp, mengunci sesi pada kegagalan ke-5, dan menolak OTP kedaluwarsa. | Seluruh verifikasi identitas, hash OTP kriptografis, dan reset password Bcrypt cost 12 berjalan aman. | **PASS** ✅ |
 
 ---
 

@@ -293,6 +293,11 @@
             </form>
 
             <div class="auth-footer-links">
+                <div style="margin-bottom: 10px;">
+                    <a href="<?= base_url('lupa-sandi') ?>" style="display: inline-flex; align-items: center; gap: 6px; color: var(--primary-rose); font-weight: 600; text-decoration: none;">
+                        <i class='bx bx-key'></i> Lupa Kata Sandi?
+                    </a>
+                </div>
                 <div>
                     Belum memiliki akun pasien? 
                     <a href="<?= base_url('register') ?>">Daftar Registrasi Akun</a>

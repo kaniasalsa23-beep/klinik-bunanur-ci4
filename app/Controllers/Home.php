@@ -2218,6 +2218,643 @@ public function logout()
     return redirect()->to('/')->with('success', 'Anda telah berhasil keluar dari akun.');
 }
 
+// ===========================================================================
+// LUPA KATA SANDI VIA WHATSAPP OTP (Bidan & Pasien)
+// ===========================================================================
+
+private function normalizePhoneNumber(string $phone): string
+{
+    $digits = preg_replace('/\D/', '', $phone);
+    if (str_starts_with($digits, '0')) {
+        $digits = '62' . substr($digits, 1);
+    }
+    return $digits;
+}
+
+private function maskPhoneNumber(string $phone): string
+{
+    $digits = preg_replace('/\D/', '', $phone);
+    if (strlen($digits) < 8) {
+        return $phone;
+    }
+    $start = substr($digits, 0, 4);
+    $end = substr($digits, -4);
+    return '+' . $start . '-****-' . $end;
+}
+
+private function sendWhatsAppOtp(string $targetPhone, string $otp, string $role): bool
+{
+    $gatewayUrl = env('WHATSAPP_GATEWAY_URL', 'https://api.fonnte.com/send');
+    $apiToken   = trim((string)env('WHATSAPP_API_TOKEN', ''));
+
+    if (empty($apiToken)) {
+        return false;
+    }
+
+    $message = "🔐 *KODE OTP KLINIK BUNANUR*\n\n"
+             . "Halo " . ($role === 'bidan' ? 'Bidan' : 'Bunda/Pasien') . ",\n"
+             . "Kode verifikasi pemulihan kata sandi Anda adalah:\n\n"
+             . "👉 *{$otp}*\n\n"
+             . "Kode ini berlaku selama *5 menit*. JANGAN berikan kode ini kepada siapa pun demi keamanan akun Anda.\n\n"
+             . "_Klinik Bunanur Care & Baby Spa_";
+
+    try {
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $gatewayUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => [
+                'target' => $targetPhone,
+                'message' => $message,
+            ],
+            CURLOPT_HTTPHEADER => [
+                "Authorization: {$apiToken}",
+            ],
+        ]);
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        curl_close($curl);
+
+        if ($err) {
+            log_message('error', "[WHATSAPP OTP] Gateway error: {$err}");
+            return false;
+        }
+        return true;
+    } catch (\Throwable $e) {
+        log_message('error', "[WHATSAPP OTP] Exception: " . $e->getMessage());
+        return false;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ALUR LUPA KATA SANDI — BIDAN NURHAYATI
+// ---------------------------------------------------------------------------
+
+public function lupaSandiBidan()
+{
+    if (session()->has('bidan')) {
+        return redirect()->to('/dashboard_bidan');
+    }
+    $captcha = $this->generateCaptcha();
+    return view('pages/bidan_lupa_sandi', ['captcha' => $captcha]);
+}
+
+public function prosesLupaSandiBidan()
+{
+    $ipAddress = $this->request->getIPAddress();
+    $endpoint  = 'lupa_sandi_bidan';
+
+    $rateCheck = RateLimiter::checkEndpointRateLimit($ipAddress, $endpoint, 3, 900);
+    if (!$rateCheck['allowed']) {
+        return redirect()->back()->withInput()->with('error', $rateCheck['message']);
+    }
+
+    $rules = [
+        'username' => 'required|min_length[3]|max_length[50]',
+        'whatsapp' => 'required|min_length[8]|max_length[25]',
+        'captcha'  => 'required',
+    ];
+
+    $username  = trim((string)$this->request->getPost('username'));
+    $rawPhone  = trim((string)$this->request->getPost('whatsapp'));
+    $captchaInput = trim((string)$this->request->getPost('captcha'));
+
+    $data = [
+        'username' => $username,
+        'whatsapp' => $rawPhone,
+        'captcha'  => $captchaInput,
+    ];
+    if (!$this->validateData($data, $rules)) {
+        return redirect()->back()->withInput()->with('error', 'Semua bidang wajib diisi dengan format yang benar.');
+    }
+
+    $expectedCaptcha = (string)session()->get('captcha_answer');
+    session()->remove('captcha_answer');
+    if ($expectedCaptcha === '' || $captchaInput !== $expectedCaptcha) {
+        return redirect()->back()->withInput()->with('error', 'Verifikasi CAPTCHA tidak cocok. Silakan coba kembali.');
+    }
+    $normPhone = $this->normalizePhoneNumber($rawPhone);
+
+    $bidan = $this->db->table('bidan')->where('username', $username)->get()->getRowArray();
+    $officialBidanWa = $this->normalizePhoneNumber(env('BIDAN_OFFICIAL_WHATSAPP', '6281224841377'));
+    $dbBidanWa = !empty($bidan['whatsapp']) ? $this->normalizePhoneNumber($bidan['whatsapp']) : $officialBidanWa;
+
+    if (!$bidan || ($normPhone !== $dbBidanWa && $normPhone !== $officialBidanWa)) {
+        usleep(rand(300000, 600000));
+        log_message('notice', "[SECURITY] Failed Bidan OTP request for username: {$username}, IP: {$ipAddress}");
+        return redirect()->back()->withInput()->with('error', 'Kombinasi Username dan Nomor WhatsApp tidak cocok dengan data Bidan terdaftar.');
+    }
+
+    $this->db->table('password_resets')
+        ->where('role', 'bidan')
+        ->where('user_id', $bidan['id'])
+        ->where('used_at', null)
+        ->update(['used_at' => date('Y-m-d H:i:s')]);
+
+    $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+    $otpHash = password_hash($otp, PASSWORD_DEFAULT);
+    $expiresAt = date('Y-m-d H:i:s', time() + 300);
+
+    $this->db->table('password_resets')->insert([
+        'role'            => 'bidan',
+        'user_id'         => $bidan['id'],
+        'whatsapp_number' => $normPhone,
+        'otp_hash'        => $otpHash,
+        'reset_token'     => null,
+        'attempts'        => 0,
+        'expires_at'      => $expiresAt,
+        'used_at'         => null,
+        'created_at'      => date('Y-m-d H:i:s'),
+    ]);
+    $resetId = $this->db->insertID();
+
+    $sent = $this->sendWhatsAppOtp($normPhone, $otp, 'bidan');
+    $directWaUrl = 'https://wa.me/' . $normPhone . '?text=' . urlencode("Halo Bidan Nurhayati, kode OTP pemulihan kata sandi Anda adalah: {$otp} (berlaku 5 menit).");
+
+    session()->set('reset_flow_bidan', [
+        'reset_id'    => $resetId,
+        'user_id'     => $bidan['id'],
+        'whatsapp'    => $normPhone,
+        'expires_at'  => time() + 300,
+        'sandbox_otp' => $sent ? null : $otp,
+        'wa_url'      => $directWaUrl,
+    ]);
+
+    if (!$sent) {
+        session()->setFlashdata('sandbox_otp', $otp);
+        session()->setFlashdata('direct_wa_url', $directWaUrl);
+    }
+
+    return redirect()->to('/bidan/otp-verifikasi')->with('success', 'Kode OTP 6-digit berhasil digenerate dan dikirim ke WhatsApp Anda.');
+}
+
+public function otpVerifikasiBidan()
+{
+    $flow = session()->get('reset_flow_bidan');
+    if (!$flow || empty($flow['reset_id'])) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Sesi verifikasi tidak ditemukan. Silakan ajukan OTP kembali.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('id', $flow['reset_id'])
+        ->where('role', 'bidan')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record || strtotime($record['expires_at']) < time()) {
+        session()->remove('reset_flow_bidan');
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Kode OTP telah kedaluwarsa. Silakan ajukan kode baru.');
+    }
+
+    $remainingSeconds = max(0, strtotime($record['expires_at']) - time());
+    $maskedPhone = $this->maskPhoneNumber($record['whatsapp_number']);
+
+    return view('pages/bidan_otp_verifikasi', [
+        'masked_phone'      => $maskedPhone,
+        'remaining_seconds' => $remainingSeconds,
+        'sandbox_otp'       => session()->getFlashdata('sandbox_otp') ?? ($flow['sandbox_otp'] ?? null),
+        'direct_wa_url'     => session()->getFlashdata('direct_wa_url') ?? ($flow['wa_url'] ?? null),
+    ]);
+}
+
+public function prosesOtpVerifikasiBidan()
+{
+    $flow = session()->get('reset_flow_bidan');
+    if (!$flow || empty($flow['reset_id'])) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Sesi verifikasi tidak ditemukan. Silakan ajukan OTP kembali.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('id', $flow['reset_id'])
+        ->where('role', 'bidan')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record) {
+        session()->remove('reset_flow_bidan');
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Permintaan reset tidak valid atau telah digunakan.');
+    }
+
+    if ((int)$record['attempts'] >= 5) {
+        $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
+        session()->remove('reset_flow_bidan');
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Batas percobaan OTP tercapai (maksimal 5 kali). Sesi dinonaktifkan.');
+    }
+
+    if (strtotime($record['expires_at']) < time()) {
+        session()->remove('reset_flow_bidan');
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Kode OTP telah kedaluwarsa (berlaku 5 menit). Silakan ajukan baru.');
+    }
+
+    $otp = trim((string)$this->request->getPost('otp'));
+    if (strlen($otp) !== 6 || !ctype_digit($otp)) {
+        return redirect()->back()->with('error', 'Masukkan 6-digit angka kode OTP.');
+    }
+
+    if (!password_verify($otp, $record['otp_hash'])) {
+        $newAttempts = (int)$record['attempts'] + 1;
+        $this->db->table('password_resets')->where('id', $record['id'])->update(['attempts' => $newAttempts]);
+        $remaining = 5 - $newAttempts;
+        if ($remaining <= 0) {
+            $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
+            session()->remove('reset_flow_bidan');
+            return redirect()->to('/bidan/lupa-sandi')->with('error', 'Batas percobaan OTP habis. Silakan ajukan OTP kembali.');
+        }
+        return redirect()->back()->with('error', "Kode OTP tidak cocok. Sisa kesempatan: {$remaining} kali.");
+    }
+
+    $resetToken = bin2hex(random_bytes(32));
+    $this->db->table('password_resets')->where('id', $record['id'])->update([
+        'reset_token' => $resetToken,
+        'attempts'    => 0,
+    ]);
+
+    session()->set('reset_flow_bidan_token', $resetToken);
+
+    return redirect()->to('/bidan/reset-sandi?token=' . urlencode($resetToken))->with('success', 'Verifikasi WhatsApp OTP berhasil! Silakan tentukan kata sandi baru Anda.');
+}
+
+public function resetSandiBidan()
+{
+    $token = trim((string)$this->request->getGet('token'));
+    if (empty($token)) {
+        $token = (string)session()->get('reset_flow_bidan_token');
+    }
+
+    if (empty($token)) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Token reset tidak ditemukan.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('reset_token', $token)
+        ->where('role', 'bidan')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record || strtotime($record['expires_at']) < time()) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Sesi reset kata sandi tidak valid atau telah kedaluwarsa.');
+    }
+
+    return view('pages/bidan_reset_sandi', ['token' => $token]);
+}
+
+public function prosesResetSandiBidan()
+{
+    $token = trim((string)$this->request->getPost('token'));
+    if (empty($token)) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Token tidak valid.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('reset_token', $token)
+        ->where('role', 'bidan')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record || strtotime($record['expires_at']) < time()) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Sesi reset tidak valid atau telah kedaluwarsa.');
+    }
+
+    $rules = [
+        'password' => [
+            'rules'  => 'required|min_length[8]|regex_match[/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};\':"\\\\|,.<>\/?~`]).{8,}$/]',
+            'errors' => [
+                'required'    => 'Kata sandi baru wajib diisi.',
+                'min_length'  => 'Kata sandi minimal berjumlah 8 karakter.',
+                'regex_match' => 'Kata sandi wajib memuat kombinasi huruf besar, huruf kecil, angka, dan karakter khusus/simbol.'
+            ]
+        ],
+        'konfirmasi' => [
+            'rules'  => 'required|matches[password]',
+            'errors' => [
+                'required' => 'Konfirmasi kata sandi wajib diisi.',
+                'matches'  => 'Konfirmasi kata sandi tidak cocok.'
+            ]
+        ]
+    ];
+
+    $password = (string)$this->request->getPost('password');
+    $konfirmasi = (string)$this->request->getPost('konfirmasi');
+    $data = [
+        'password'   => $password,
+        'konfirmasi' => $konfirmasi,
+    ];
+
+    if (!$this->validateData($data, $rules)) {
+        return redirect()->back()->withInput()->with('error', $this->validator->listErrors());
+    }
+
+    $newPassword = (string)$this->request->getPost('password');
+    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT, ['cost' => 12]);
+
+    $this->db->table('bidan')->where('id', $record['user_id'])->update([
+        'password' => $hashedPassword,
+    ]);
+
+    $this->db->table('password_resets')->where('id', $record['id'])->update([
+        'used_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    session()->remove('reset_flow_bidan');
+    session()->remove('reset_flow_bidan_token');
+
+    delete_cookie('remember_token_bidan');
+    JwtAuth::clearCookie();
+
+    log_message('info', "[SECURITY] Bidan password reset successful for user_id: {$record['user_id']}");
+
+    return redirect()->to('/login_bidan')->with('success', '✅ Kata sandi akun Bidan berhasil diperbarui. Silakan masuk menggunakan kata sandi baru Anda.');
+}
+
+// ---------------------------------------------------------------------------
+// ALUR LUPA KATA SANDI — PASIEN
+// ---------------------------------------------------------------------------
+
+public function lupaSandiPasien()
+{
+    if (session()->has('pasien')) {
+        return redirect()->to('/dashboard_pasien');
+    }
+    $captcha = $this->generateCaptcha();
+    return view('pages/pasien_lupa_sandi', ['captcha' => $captcha]);
+}
+
+public function prosesLupaSandiPasien()
+{
+    $ipAddress = $this->request->getIPAddress();
+    $endpoint  = 'lupa_sandi_pasien';
+
+    $rateCheck = RateLimiter::checkEndpointRateLimit($ipAddress, $endpoint, 3, 900);
+    if (!$rateCheck['allowed']) {
+        return redirect()->back()->withInput()->with('error', $rateCheck['message']);
+    }
+
+    $rules = [
+        'username' => 'required|min_length[3]|max_length[100]',
+        'whatsapp' => 'required|min_length[8]|max_length[25]',
+        'captcha'  => 'required',
+    ];
+
+    $username  = trim((string)$this->request->getPost('username'));
+    $rawPhone  = trim((string)$this->request->getPost('whatsapp'));
+    $captchaInput = trim((string)$this->request->getPost('captcha'));
+
+    $data = [
+        'username' => $username,
+        'whatsapp' => $rawPhone,
+        'captcha'  => $captchaInput,
+    ];
+    if (!$this->validateData($data, $rules)) {
+        return redirect()->back()->withInput()->with('error', 'Semua bidang wajib diisi dengan format yang benar.');
+    }
+
+    $expectedCaptcha = (string)session()->get('captcha_answer');
+    session()->remove('captcha_answer');
+    if ($expectedCaptcha === '' || $captchaInput !== $expectedCaptcha) {
+        return redirect()->back()->withInput()->with('error', 'Verifikasi CAPTCHA tidak cocok. Silakan coba kembali.');
+    }
+
+    $normPhone = $this->normalizePhoneNumber($rawPhone);
+
+    $pasien = $this->db->table('pasien')
+        ->groupStart()
+            ->where('username', $username)
+            ->orWhere('email', $username)
+        ->groupEnd()
+        ->get()->getRowArray();
+
+    $dbPasienWa = !empty($pasien['no_hp']) ? $this->normalizePhoneNumber($pasien['no_hp']) : '';
+
+    if (!$pasien || $normPhone !== $dbPasienWa) {
+        usleep(rand(300000, 600000));
+        log_message('notice', "[SECURITY] Failed Pasien OTP request for username: {$username}, IP: {$ipAddress}");
+        return redirect()->back()->withInput()->with('error', 'Kombinasi Akun dan Nomor WhatsApp tidak cocok dengan data pasien terdaftar.');
+    }
+
+    $this->db->table('password_resets')
+        ->where('role', 'pasien')
+        ->where('user_id', $pasien['id'])
+        ->where('used_at', null)
+        ->update(['used_at' => date('Y-m-d H:i:s')]);
+
+    $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+    $otpHash = password_hash($otp, PASSWORD_DEFAULT);
+    $expiresAt = date('Y-m-d H:i:s', time() + 300);
+
+    $this->db->table('password_resets')->insert([
+        'role'            => 'pasien',
+        'user_id'         => $pasien['id'],
+        'whatsapp_number' => $normPhone,
+        'otp_hash'        => $otpHash,
+        'reset_token'     => null,
+        'attempts'        => 0,
+        'expires_at'      => $expiresAt,
+        'used_at'         => null,
+        'created_at'      => date('Y-m-d H:i:s'),
+    ]);
+    $resetId = $this->db->insertID();
+
+    $sent = $this->sendWhatsAppOtp($normPhone, $otp, 'pasien');
+    $directWaUrl = 'https://wa.me/' . $normPhone . '?text=' . urlencode("Halo {$pasien['nama']}, kode OTP verifikasi lupa kata sandi Klinik Bunanur Anda adalah: {$otp} (berlaku 5 menit).");
+
+    session()->set('reset_flow_pasien', [
+        'reset_id'    => $resetId,
+        'user_id'     => $pasien['id'],
+        'whatsapp'    => $normPhone,
+        'expires_at'  => time() + 300,
+        'sandbox_otp' => $sent ? null : $otp,
+        'wa_url'      => $directWaUrl,
+    ]);
+
+    if (!$sent) {
+        session()->setFlashdata('sandbox_otp', $otp);
+        session()->setFlashdata('direct_wa_url', $directWaUrl);
+    }
+
+    return redirect()->to('/pasien/otp-verifikasi')->with('success', 'Kode OTP 6-digit berhasil digenerate dan dikirim ke WhatsApp Anda.');
+}
+
+public function otpVerifikasiPasien()
+{
+    $flow = session()->get('reset_flow_pasien');
+    if (!$flow || empty($flow['reset_id'])) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Sesi verifikasi tidak ditemukan. Silakan ajukan OTP kembali.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('id', $flow['reset_id'])
+        ->where('role', 'pasien')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record || strtotime($record['expires_at']) < time()) {
+        session()->remove('reset_flow_pasien');
+        return redirect()->to('/lupa-sandi')->with('error', 'Kode OTP telah kedaluwarsa. Silakan ajukan kode baru.');
+    }
+
+    $remainingSeconds = max(0, strtotime($record['expires_at']) - time());
+    $maskedPhone = $this->maskPhoneNumber($record['whatsapp_number']);
+
+    return view('pages/pasien_otp_verifikasi', [
+        'masked_phone'      => $maskedPhone,
+        'remaining_seconds' => $remainingSeconds,
+        'sandbox_otp'       => session()->getFlashdata('sandbox_otp') ?? ($flow['sandbox_otp'] ?? null),
+        'direct_wa_url'     => session()->getFlashdata('direct_wa_url') ?? ($flow['wa_url'] ?? null),
+    ]);
+}
+
+public function prosesOtpVerifikasiPasien()
+{
+    $flow = session()->get('reset_flow_pasien');
+    if (!$flow || empty($flow['reset_id'])) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Sesi verifikasi tidak ditemukan. Silakan ajukan OTP kembali.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('id', $flow['reset_id'])
+        ->where('role', 'pasien')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record) {
+        session()->remove('reset_flow_pasien');
+        return redirect()->to('/lupa-sandi')->with('error', 'Permintaan reset tidak valid atau telah digunakan.');
+    }
+
+    if ((int)$record['attempts'] >= 5) {
+        $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
+        session()->remove('reset_flow_pasien');
+        return redirect()->to('/lupa-sandi')->with('error', 'Batas percobaan OTP tercapai (maksimal 5 kali). Sesi dinonaktifkan.');
+    }
+
+    if (strtotime($record['expires_at']) < time()) {
+        session()->remove('reset_flow_pasien');
+        return redirect()->to('/lupa-sandi')->with('error', 'Kode OTP telah kedaluwarsa (berlaku 5 menit). Silakan ajukan baru.');
+    }
+
+    $otp = trim((string)$this->request->getPost('otp'));
+    if (strlen($otp) !== 6 || !ctype_digit($otp)) {
+        return redirect()->back()->with('error', 'Masukkan 6-digit angka kode OTP.');
+    }
+
+    if (!password_verify($otp, $record['otp_hash'])) {
+        $newAttempts = (int)$record['attempts'] + 1;
+        $this->db->table('password_resets')->where('id', $record['id'])->update(['attempts' => $newAttempts]);
+        $remaining = 5 - $newAttempts;
+        if ($remaining <= 0) {
+            $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
+            session()->remove('reset_flow_pasien');
+            return redirect()->to('/lupa-sandi')->with('error', 'Batas percobaan OTP habis. Silakan ajukan OTP kembali.');
+        }
+        return redirect()->back()->with('error', "Kode OTP tidak cocok. Sisa kesempatan: {$remaining} kali.");
+    }
+
+    $resetToken = bin2hex(random_bytes(32));
+    $this->db->table('password_resets')->where('id', $record['id'])->update([
+        'reset_token' => $resetToken,
+        'attempts'    => 0,
+    ]);
+
+    session()->set('reset_flow_pasien_token', $resetToken);
+
+    return redirect()->to('/pasien/reset-sandi?token=' . urlencode($resetToken))->with('success', 'Verifikasi WhatsApp OTP berhasil! Silakan tentukan kata sandi baru Anda.');
+}
+
+public function resetSandiPasien()
+{
+    $token = trim((string)$this->request->getGet('token'));
+    if (empty($token)) {
+        $token = (string)session()->get('reset_flow_pasien_token');
+    }
+
+    if (empty($token)) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Token reset tidak ditemukan.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('reset_token', $token)
+        ->where('role', 'pasien')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record || strtotime($record['expires_at']) < time()) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Sesi reset kata sandi tidak valid atau telah kedaluwarsa.');
+    }
+
+    return view('pages/pasien_reset_sandi', ['token' => $token]);
+}
+
+public function prosesResetSandiPasien()
+{
+    $token = trim((string)$this->request->getPost('token'));
+    if (empty($token)) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Token tidak valid.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('reset_token', $token)
+        ->where('role', 'pasien')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record || strtotime($record['expires_at']) < time()) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Sesi reset tidak valid atau telah kedaluwarsa.');
+    }
+
+    $rules = [
+        'password' => [
+            'rules'  => 'required|min_length[8]|regex_match[/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};\':"\\\\|,.<>\/?~`]).{8,}$/]',
+            'errors' => [
+                'required'    => 'Kata sandi baru wajib diisi.',
+                'min_length'  => 'Kata sandi minimal berjumlah 8 karakter.',
+                'regex_match' => 'Kata sandi wajib memuat kombinasi huruf besar, huruf kecil, angka, dan karakter khusus/simbol.'
+            ]
+        ],
+        'konfirmasi' => [
+            'rules'  => 'required|matches[password]',
+            'errors' => [
+                'required' => 'Konfirmasi kata sandi wajib diisi.',
+                'matches'  => 'Konfirmasi kata sandi tidak cocok.'
+            ]
+        ]
+    ];
+
+    $password = (string)$this->request->getPost('password');
+    $konfirmasi = (string)$this->request->getPost('konfirmasi');
+    $data = [
+        'password'   => $password,
+        'konfirmasi' => $konfirmasi,
+    ];
+
+    if (!$this->validateData($data, $rules)) {
+        return redirect()->back()->withInput()->with('error', $this->validator->listErrors());
+    }
+
+    $newPassword = (string)$this->request->getPost('password');
+    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT, ['cost' => 12]);
+
+    $this->db->table('pasien')->where('id', $record['user_id'])->update([
+        'password' => $hashedPassword,
+    ]);
+
+    $this->db->table('password_resets')->where('id', $record['id'])->update([
+        'used_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    session()->remove('reset_flow_pasien');
+    session()->remove('reset_flow_pasien_token');
+
+    delete_cookie('remember_token_pasien');
+    JwtAuth::clearCookie();
+
+    log_message('info', "[SECURITY] Pasien password reset successful for user_id: {$record['user_id']}");
+
+    return redirect()->to('/login_pasien')->with('success', '✅ Kata sandi akun Anda berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.');
+}
+
+
 
 }
 

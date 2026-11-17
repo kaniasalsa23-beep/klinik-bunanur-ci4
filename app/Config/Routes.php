@@ -28,6 +28,38 @@ $routes->post('register_bidan/(:any)', 'Home::registerBidanBlocked');
 $routes->get('login_bidan', 'Home::loginBidanForm');
 $routes->post('login_bidan', 'Home::prosesLoginBidan');
 
+// ==========================================
+// LUPA KATA SANDI VIA WHATSAPP OTP (Bidan & Pasien)
+// ==========================================
+// Alur Lupa Sandi Bidan Nurhayati
+$routes->get('bidan/lupa-sandi', 'Home::lupaSandiBidan');
+$routes->post('bidan/lupa-sandi', 'Home::prosesLupaSandiBidan');
+$routes->post('bidan/lupa-sandi/proses', 'Home::prosesLupaSandiBidan');
+$routes->get('bidan/otp-verifikasi', 'Home::otpVerifikasiBidan');
+$routes->post('bidan/otp-verifikasi', 'Home::prosesOtpVerifikasiBidan');
+$routes->post('bidan/otp-verifikasi/proses', 'Home::prosesOtpVerifikasiBidan');
+$routes->get('bidan/reset-sandi', 'Home::resetSandiBidan');
+$routes->post('bidan/reset-sandi', 'Home::prosesResetSandiBidan');
+$routes->post('bidan/reset-sandi/proses', 'Home::prosesResetSandiBidan');
+
+// Alur Lupa Sandi Pasien
+$routes->get('lupa-sandi', 'Home::lupaSandiPasien');
+$routes->get('pasien/lupa-sandi', 'Home::lupaSandiPasien');
+$routes->post('lupa-sandi', 'Home::prosesLupaSandiPasien');
+$routes->post('lupa-sandi/proses', 'Home::prosesLupaSandiPasien');
+$routes->post('pasien/lupa-sandi', 'Home::prosesLupaSandiPasien');
+$routes->get('pasien/otp-verifikasi', 'Home::otpVerifikasiPasien');
+$routes->get('otp-verifikasi', 'Home::otpVerifikasiPasien');
+$routes->post('pasien/otp-verifikasi', 'Home::prosesOtpVerifikasiPasien');
+$routes->post('pasien/otp-verifikasi/proses', 'Home::prosesOtpVerifikasiPasien');
+$routes->post('otp-verifikasi', 'Home::prosesOtpVerifikasiPasien');
+$routes->get('pasien/reset-sandi', 'Home::resetSandiPasien');
+$routes->get('reset-sandi', 'Home::resetSandiPasien');
+$routes->post('pasien/reset-sandi', 'Home::prosesResetSandiPasien');
+$routes->post('pasien/reset-sandi/proses', 'Home::prosesResetSandiPasien');
+$routes->post('reset-sandi', 'Home::prosesResetSandiPasien');
+
+
 
 // ==========================================
 // PASIEN PROTECTED ROUTES (RBAC: pasienAuth)

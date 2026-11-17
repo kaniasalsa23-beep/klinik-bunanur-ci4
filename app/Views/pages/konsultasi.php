@@ -14,7 +14,7 @@ $limit_maksimal = $limit_maksimal ?? 10;
 
 $chat = $chat ?? [];
 
-$raw_wa = !empty($bidan['whatsapp']) ? $bidan['whatsapp'] : (!empty($bidan['no_hp']) ? $bidan['no_hp'] : '085864549503');
+$raw_wa = !empty($bidan['whatsapp']) ? $bidan['whatsapp'] : (!empty($bidan['no_hp']) ? $bidan['no_hp'] : '081224841377');
 $clean_wa = preg_replace('/[^0-9]/', '', (string)$raw_wa);
 if (str_starts_with($clean_wa, '0')) {
     $no_wa_bidan = '62' . substr($clean_wa, 1);
