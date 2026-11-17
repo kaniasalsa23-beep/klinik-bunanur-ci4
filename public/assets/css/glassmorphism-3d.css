@@ -877,24 +877,58 @@ input[type="checkbox"]:checked + .cyber-switch::after {
    HIGH CONTRAST & ACCESSIBILITY: HERO & SECTION HEADINGS & PARAGRAPHS
    Guarantees 100% visible, high-contrast text across all landing pages
    ========================================================================== */
-.hero-content h1, .hero-section h1, .tentang-text h2, .section-header-center h2 {
+body, main, section {
+    color: #3d2832 !important;
+}
+
+h1, h2, h3, h4, .hero-title, .section-title, .hero-content h1, .hero-section h1, .tentang-text h2, .section-header-center h2 {
     color: #2d1b24 !important;
-    opacity: 1 !important;
-    visibility: visible !important;
     -webkit-text-fill-color: #2d1b24 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
 }
 
-.hero-content h3, .hero-section h3, .tentang-text h3, .hero-content h1 span, .hero-card-3d h3 {
+h1 span, h2 span, .text-accent-pink, .hero-content h3, .hero-section h3, .tentang-text h3, .hero-content h1 span, .hero-card-3d h3 {
     color: #c2255c !important;
+    -webkit-text-fill-color: #c2255c !important;
     opacity: 1 !important;
     visibility: visible !important;
-    -webkit-text-fill-color: #c2255c !important;
 }
 
-.hero-content p, .hero-section p, .tentang-text p, .tentang-biografi, .section-header-center p, .hero-card-3d p {
+p, .hero-desc, .section-desc, .lead, .hero-content p, .hero-section p, .tentang-text p, .tentang-biografi, .section-header-center p, .hero-card-3d p {
     color: #5c4350 !important;
+    -webkit-text-fill-color: #5c4350 !important;
     opacity: 1 !important;
     visibility: visible !important;
+}
+
+/* Layering & Z-Index Guarantee: Canvas on Layer 0, Content on Layer 2 */
+#bg-particles {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+}
+
+.cyber-glow-blob {
+    z-index: 0 !important;
+    pointer-events: none !important;
+}
+
+.cyber-navbar {
+    position: fixed !important;
+    z-index: 1000 !important;
+}
+
+.hero-section, .hero-content, .hero-3d-visual, .hero-card-3d,
+.section-tentang, .tentang-card-glass, .tentang-text,
+.section-gallery, .gallery-container, .section-testimoni,
+.testimoni-slider-wrapper, .footer-cyber, main, section {
+    position: relative !important;
+    z-index: 2 !important;
 }
 
 

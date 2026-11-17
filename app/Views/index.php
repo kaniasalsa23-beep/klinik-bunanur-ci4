@@ -21,8 +21,8 @@
     <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-    <!-- Master Medical Glassmorphism 3D CSS (Light Mode) -->
-    <link rel="stylesheet" href="<?= base_url('assets/css/glassmorphism-3d.css') ?>">
+    <!-- Master Medical Glassmorphism 3D CSS (Light Mode) with Cache-Busting -->
+    <link rel="stylesheet" href="<?= base_url('assets/css/glassmorphism-3d.css?v=' . time()) ?>">
 
     <style>
         :root {
@@ -34,12 +34,41 @@
             --glass-border-color: rgba(244, 63, 94, 0.16);
         }
 
+        body, main, section {
+            color: #3d2832 !important;
+        }
+
+        h1, h2, h3, h4, .hero-title, .section-title {
+            color: #2d1b24 !important;
+            -webkit-text-fill-color: #2d1b24 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            transform: none !important;
+        }
+
+        h1 span, h2 span, .text-accent-pink {
+            color: #c2255c !important;
+            -webkit-text-fill-color: #c2255c !important;
+        }
+
+        p, .hero-desc, .section-desc, .lead {
+            color: #5c4350 !important;
+            -webkit-text-fill-color: #5c4350 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
         body {
             background: linear-gradient(135deg, #fff5f7 0%, #fdf2f8 50%, #fce7f3 100%);
-            color: #1e293b;
+            color: #3d2832 !important;
             font-family: 'Plus Jakarta Sans', sans-serif;
             overflow-x: hidden;
             position: relative;
+        }
+
+        .hero-section, .section-tentang, .section-gallery, .section-testimoni, .footer-cyber {
+            position: relative !important;
+            z-index: 2 !important;
         }
 
         /* ================= FLOATING GLASS NAVBAR (LIGHT MODE) ================= */

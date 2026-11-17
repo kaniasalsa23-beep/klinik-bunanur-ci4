@@ -54,7 +54,26 @@ public function index()
     $profilModel = new BidanModel();
     $galeriModel = new GaleriBerandaModel();
 
-    $data['profil'] = $profilModel->first();
+    $profil = $profilModel->first();
+    if (empty($profil)) {
+        $profil = [];
+    }
+
+    // Default Fallback Kaya Bahasa Indonesia untuk seluruh heading & deskripsi hero/tentang
+    if (empty(trim($profil['hero_judul'] ?? ''))) {
+        $profil['hero_judul'] = 'Perawatan Lembut & Penuh Kasih untuk Ibu dan Buah Hati';
+    }
+    if (empty(trim($profil['spesialis'] ?? ''))) {
+        $profil['spesialis'] = !empty(trim($profil['nama'] ?? '')) ? $profil['nama'] : 'Klinik Pratama Kebidanan & Perawatan Holistik Ibu-Anak';
+    }
+    if (empty(trim($profil['hero_subjudul'] ?? ''))) {
+        $profil['hero_subjudul'] = 'Layanan pemeriksaan kehamilan, persalinan nyaman, dan perawatan tumbuh kembang bayi dengan pendekatan medis modern yang hangat, aman, dan terpercaya.';
+    }
+    if (empty(trim($profil['tentang'] ?? ''))) {
+        $profil['tentang'] = 'Klinik Bunanur didirikan dengan visi menghadirkan perawatan kebidanan yang hangat, profesional, dan berbasis bukti untuk mendukung kesehatan ibu dan anak.';
+    }
+
+    $data['profil'] = $profil;
 
     $data['pasien'] = session()->get('pasien');
 
