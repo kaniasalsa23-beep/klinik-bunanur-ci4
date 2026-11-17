@@ -361,7 +361,7 @@
                         name="whatsapp"
                         class="cyber-input"
                         value="<?= esc(old('whatsapp') ?? '') ?>"
-                        placeholder="Nomor WhatsApp Terdaftar (cth: 0812xxxx)"
+                        placeholder="Masukkan Nomor WhatsApp Terdaftar"
                         required
                     >
                     <i class='bx bxl-whatsapp input-icon' style="font-size: 22px; color: #16a34a;"></i>

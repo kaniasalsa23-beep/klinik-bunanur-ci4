@@ -416,7 +416,7 @@
 
                     <div class="field-group">
                         <label>No. HP (WhatsApp)</label>
-                        <input type="text" name="no_hp" class="form-input" value="<?= esc($pasien['no_hp'] ?? ''); ?>">
+                        <input type="text" name="no_hp" class="form-input" value="<?= esc($pasien['no_hp'] ?? ''); ?>" placeholder="Masukkan Nomor WhatsApp Terdaftar">
                     </div>
 
                     <div class="field-group full">

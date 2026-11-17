@@ -782,7 +782,7 @@ public function registerProses()
         'nama'     => 'required|min_length[3]|max_length[100]',
         'username' => 'required|min_length[3]|max_length[50]|alpha_numeric',
         'email'    => 'required|valid_email|max_length[100]',
-        'no_hp'    => 'required|numeric|min_length[10]|max_length[15]',
+        'no_hp'    => 'required|min_length[9]|max_length[25]',
         'alamat'   => 'required|max_length[255]',
         'password' => [
             'rules'  => 'required|min_length[8]|regex_match[/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};\':"\\\\|,.<>\/?~`]).{8,}$/]',
@@ -810,9 +810,17 @@ public function registerProses()
     $nama      = trim((string)$this->request->getPost('nama'));
     $username  = trim((string)$this->request->getPost('username'));
     $email     = trim((string)$this->request->getPost('email'));
-    $no_hp     = trim((string)$this->request->getPost('no_hp'));
+    $rawNoHp   = trim((string)$this->request->getPost('no_hp'));
     $alamat    = trim((string)$this->request->getPost('alamat'));
     $password  = (string)$this->request->getPost('password');
+
+    // Centralized WhatsApp normalization & format validation
+    $normPhone = normalize_whatsapp($rawNoHp);
+    if (!is_valid_whatsapp($normPhone)) {
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Nomor WhatsApp tidak valid. Masukkan nomor WhatsApp aktif (contoh format awalan 08... atau 628...).');
+    }
 
     $cekUser = $this->db->table('pasien')
         ->where('username', $username)
@@ -832,6 +840,20 @@ public function registerProses()
         return redirect()->back()->withInput()->with('error', 'Email sudah terdaftar');
     }
 
+    // Check duplicate WhatsApp number (both normalized and local format)
+    $localPhone = '0' . substr($normPhone, 2);
+    $cekPhone = $this->db->table('pasien')
+        ->groupStart()
+            ->where('no_hp', $normPhone)
+            ->orWhere('no_hp', $localPhone)
+        ->groupEnd()
+        ->get()
+        ->getRowArray();
+
+    if ($cekPhone) {
+        return redirect()->back()->withInput()->with('error', 'Nomor WhatsApp sudah terdaftar pada akun pasien lain.');
+    }
+
     // 3. Enforce Bcrypt Cost Factor 12
     $hashedPassword = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
 
@@ -839,7 +861,7 @@ public function registerProses()
         'nama'     => $nama,
         'username' => $username,
         'email'    => $email,
-        'no_hp'    => $no_hp,
+        'no_hp'    => $normPhone,
         'alamat'   => $alamat,
         'password' => $hashedPassword
     ]);
@@ -2224,37 +2246,35 @@ public function logout()
 
 private function normalizePhoneNumber(string $phone): string
 {
-    $digits = preg_replace('/\D/', '', $phone);
-    if (str_starts_with($digits, '0')) {
-        $digits = '62' . substr($digits, 1);
-    }
-    return $digits;
+    return normalize_whatsapp($phone);
 }
 
 private function maskPhoneNumber(string $phone): string
 {
-    $digits = preg_replace('/\D/', '', $phone);
-    if (strlen($digits) < 8) {
-        return $phone;
-    }
-    $start = substr($digits, 0, 4);
-    $end = substr($digits, -4);
-    return '+' . $start . '-****-' . $end;
+    return mask_whatsapp($phone);
 }
 
 private function sendWhatsAppOtp(string $targetPhone, string $otp, string $role): bool
 {
-    $gatewayUrl = env('WHATSAPP_GATEWAY_URL', 'https://api.fonnte.com/send');
-    $apiToken   = trim((string)env('WHATSAPP_API_TOKEN', ''));
+    $gatewayUrl = 'https://api.fonnte.com/send';
 
-    // Gunakan token dari .env atau fallback token placeholder Fonnte
+    // 1. Ambil token dari env('FONNTE_TOKEN'), fallback ke config('App')->fonnteToken atau WHATSAPP_API_TOKEN
+    $apiToken = trim((string)env('FONNTE_TOKEN', ''));
+    if (empty($apiToken)) {
+        $apiToken = trim((string)(config('App')->fonnteToken ?? ''));
+    }
+    if (empty($apiToken)) {
+        $apiToken = trim((string)env('WHATSAPP_API_TOKEN', ''));
+    }
     if (empty($apiToken)) {
         $apiToken = '[TEMPEL_TOKEN_FONNTE_ANDA]';
     }
 
+    $normTarget = normalize_whatsapp($targetPhone);
+
     $message = "\xF0\x9F\x94\x90 *KODE OTP KLINIK BUNANUR*\n\n"
              . "Halo " . ($role === 'bidan' ? 'Bidan' : 'Bunda/Pasien') . ",\n"
-             . "Kode verifikasi pemulihan kata sandi Anda adalah:\n\n"
+             . "Kode verifikasi pemulihan kata sandi akun Anda adalah:\n\n"
              . "\xF0\x9F\x91\x89 *{$otp}*\n\n"
              . "Kode ini bersifat rahasia dan berlaku selama *5 menit*. JANGAN berikan kode ini kepada siapa pun demi keamanan akun Anda.\n\n"
              . "_Klinik Bunanur Care & Baby Spa_";
@@ -2262,12 +2282,14 @@ private function sendWhatsAppOtp(string $targetPhone, string $otp, string $role)
     try {
         $curl = curl_init();
         curl_setopt_array($curl, [
-            CURLOPT_URL            => 'https://api.fonnte.com/send',
+            CURLOPT_URL            => $gatewayUrl,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => [
-                'target'  => $targetPhone,
+                'target'  => $normTarget,
                 'message' => $message,
             ],
             CURLOPT_HTTPHEADER     => [
@@ -2280,13 +2302,13 @@ private function sendWhatsAppOtp(string $targetPhone, string $otp, string $role)
         curl_close($curl);
 
         if ($err) {
-            log_message('error', "[WHATSAPP OTP] cURL error: {$err}");
+            log_message('error', "[WHATSAPP OTP] cURL error ke Fonnte: {$err}");
             return false;
         }
 
         $decoded = json_decode($response, true);
         if ($httpCode >= 200 && $httpCode < 300 && !empty($decoded['status'])) {
-            log_message('info', "[WHATSAPP OTP] Berhasil mengirim OTP ke {$targetPhone} (role: {$role})");
+            log_message('info', "[WHATSAPP OTP] Berhasil mengirim OTP ke {$normTarget} (role: {$role})");
             return true;
         }
 
@@ -2327,8 +2349,8 @@ public function prosesLupaSandiBidan()
         'captcha'  => 'required',
     ];
 
-    $username  = trim((string)$this->request->getPost('username'));
-    $rawPhone  = trim((string)$this->request->getPost('whatsapp'));
+    $username     = trim((string)$this->request->getPost('username'));
+    $rawPhone     = trim((string)$this->request->getPost('whatsapp'));
     $captchaInput = trim((string)$this->request->getPost('captcha'));
 
     $data = [
@@ -2345,11 +2367,12 @@ public function prosesLupaSandiBidan()
     if ($expectedCaptcha === '' || $captchaInput !== $expectedCaptcha) {
         return redirect()->back()->withInput()->with('error', 'Verifikasi CAPTCHA tidak cocok. Silakan coba kembali.');
     }
-    $normPhone = $this->normalizePhoneNumber($rawPhone);
 
+    $normPhone = normalize_whatsapp($rawPhone);
     $bidan = $this->db->table('bidan')->where('username', $username)->get()->getRowArray();
-    $officialBidanWa = $this->normalizePhoneNumber(env('BIDAN_OFFICIAL_WHATSAPP', '6281224841377'));
-    $dbBidanWa = !empty($bidan['whatsapp']) ? $this->normalizePhoneNumber($bidan['whatsapp']) : $officialBidanWa;
+
+    $officialBidanWa = normalize_whatsapp(env('BIDAN_OFFICIAL_WHATSAPP', '6281224841377'));
+    $dbBidanWa = !empty($bidan['whatsapp']) ? normalize_whatsapp($bidan['whatsapp']) : (!empty($bidan['no_hp']) ? normalize_whatsapp($bidan['no_hp']) : $officialBidanWa);
 
     if (!$bidan || ($normPhone !== $dbBidanWa && $normPhone !== $officialBidanWa)) {
         usleep(rand(300000, 600000));
@@ -2357,11 +2380,25 @@ public function prosesLupaSandiBidan()
         return redirect()->back()->withInput()->with('error', 'Kombinasi Username dan Nomor WhatsApp tidak cocok dengan data Bidan terdaftar.');
     }
 
-    $this->db->table('password_resets')
+    // Cek cooldown 60 detik jika ada permintaan OTP sebelumnya yang masih aktif
+    $activeOtp = $this->db->table('password_resets')
         ->where('role', 'bidan')
         ->where('user_id', $bidan['id'])
         ->where('used_at', null)
-        ->update(['used_at' => date('Y-m-d H:i:s')]);
+        ->orderBy('id', 'DESC')
+        ->get()->getRowArray();
+
+    if ($activeOtp) {
+        $elapsed = time() - strtotime($activeOtp['created_at']);
+        if ($elapsed < 60) {
+            $wait = 60 - $elapsed;
+            return redirect()->to('/bidan/otp-verifikasi')->with('error', "Harap tunggu {$wait} detik sebelum meminta kode OTP kembali.");
+        }
+        // Nonaktifkan OTP lama
+        $this->db->table('password_resets')
+            ->where('id', $activeOtp['id'])
+            ->update(['used_at' => date('Y-m-d H:i:s')]);
+    }
 
     $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
     $otpHash = password_hash($otp, PASSWORD_DEFAULT);
@@ -2383,9 +2420,8 @@ public function prosesLupaSandiBidan()
     $sent = $this->sendWhatsAppOtp($normPhone, $otp, 'bidan');
 
     if (!$sent) {
-        // Gagal kirim — JANGAN bocorkan OTP ke tampilan
         log_message('error', "[LUPA SANDI BIDAN] Gagal mengirim OTP ke {$normPhone}");
-        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Gagal mengirim kode OTP ke WhatsApp. Pastikan nomor WhatsApp aktif dan coba lagi dalam beberapa saat.');
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Gagal mengirim kode OTP ke WhatsApp. Pastikan koneksi gateway aktif dan coba lagi dalam beberapa saat.');
     }
 
     session()->set('reset_flow_bidan', [
@@ -2417,14 +2453,60 @@ public function otpVerifikasiBidan()
     }
 
     $remainingSeconds = max(0, strtotime($record['expires_at']) - time());
-    $maskedPhone = $this->maskPhoneNumber($record['whatsapp_number']);
+    $cooldownRemaining = max(0, 60 - (time() - strtotime($record['created_at'])));
+    $maskedPhone = mask_whatsapp($record['whatsapp_number']);
 
     $viewPath = is_file(APPPATH . 'Views/bidan/otp_verifikasi.php') ? 'bidan/otp_verifikasi' : 'pages/bidan_otp_verifikasi';
 
     return view($viewPath, [
-        'masked_phone'      => $maskedPhone,
-        'remaining_seconds' => $remainingSeconds,
+        'masked_phone'       => $maskedPhone,
+        'remaining_seconds'  => $remainingSeconds,
+        'cooldown_remaining' => $cooldownRemaining,
     ]);
+}
+
+public function kirimUlangOtpBidan()
+{
+    $flow = session()->get('reset_flow_bidan');
+    if (!$flow || empty($flow['reset_id'])) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Sesi verifikasi tidak ditemukan. Silakan ajukan OTP kembali.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('id', $flow['reset_id'])
+        ->where('role', 'bidan')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record) {
+        session()->remove('reset_flow_bidan');
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Sesi verifikasi telah berakhir atau tidak valid.');
+    }
+
+    $elapsed = time() - strtotime($record['created_at']);
+    if ($elapsed < 60) {
+        $wait = 60 - $elapsed;
+        return redirect()->to('/bidan/otp-verifikasi')->with('error', "Harap tunggu {$wait} detik sebelum meminta kode OTP baru.");
+    }
+
+    $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+    $otpHash = password_hash($otp, PASSWORD_DEFAULT);
+    $expiresAt = date('Y-m-d H:i:s', time() + 300);
+
+    $this->db->table('password_resets')->where('id', $record['id'])->update([
+        'otp_hash'   => $otpHash,
+        'attempts'   => 0,
+        'expires_at' => $expiresAt,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    $sent = $this->sendWhatsAppOtp($record['whatsapp_number'], $otp, 'bidan');
+    if (!$sent) {
+        log_message('error', "[KIRIM ULANG OTP BIDAN] Gagal mengirim OTP ke {$record['whatsapp_number']}");
+        return redirect()->to('/bidan/otp-verifikasi')->with('error', 'Gagal mengirim kode OTP ke WhatsApp. Pastikan koneksi WhatsApp Gateway aktif.');
+    }
+
+    return redirect()->to('/bidan/otp-verifikasi')->with('success', 'Kode OTP baru berhasil dikirim ke WhatsApp Anda. Silakan cek pesan masuk.');
 }
 
 public function prosesOtpVerifikasiBidan()
@@ -2448,7 +2530,7 @@ public function prosesOtpVerifikasiBidan()
     if ((int)$record['attempts'] >= 5) {
         $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
         session()->remove('reset_flow_bidan');
-        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Batas percobaan OTP tercapai (maksimal 5 kali). Sesi dinonaktifkan.');
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Batas percobaan OTP tercapai (maksimal 5 kali). Sesi dinonaktifkan demi keamanan.');
     }
 
     if (strtotime($record['expires_at']) < time()) {
@@ -2555,7 +2637,7 @@ public function prosesResetSandiBidan()
     }
 
     $newPassword = (string)$this->request->getPost('password');
-    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT, ['cost' => 12]);
+    $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
 
     $this->db->table('bidan')->where('id', $record['user_id'])->update([
         'password' => $hashedPassword,
@@ -2605,8 +2687,8 @@ public function prosesLupaSandiPasien()
         'captcha'  => 'required',
     ];
 
-    $username  = trim((string)$this->request->getPost('username'));
-    $rawPhone  = trim((string)$this->request->getPost('whatsapp'));
+    $username     = trim((string)$this->request->getPost('username'));
+    $rawPhone     = trim((string)$this->request->getPost('whatsapp'));
     $captchaInput = trim((string)$this->request->getPost('captcha'));
 
     $data = [
@@ -2624,7 +2706,7 @@ public function prosesLupaSandiPasien()
         return redirect()->back()->withInput()->with('error', 'Verifikasi CAPTCHA tidak cocok. Silakan coba kembali.');
     }
 
-    $normPhone = $this->normalizePhoneNumber($rawPhone);
+    $normPhone = normalize_whatsapp($rawPhone);
 
     $pasien = $this->db->table('pasien')
         ->groupStart()
@@ -2633,19 +2715,39 @@ public function prosesLupaSandiPasien()
         ->groupEnd()
         ->get()->getRowArray();
 
-    $dbPasienWa = !empty($pasien['no_hp']) ? $this->normalizePhoneNumber($pasien['no_hp']) : '';
-
-    if (!$pasien || $normPhone !== $dbPasienWa) {
+    if (!$pasien) {
         usleep(rand(300000, 600000));
-        log_message('notice', "[SECURITY] Failed Pasien OTP request for username: {$username}, IP: {$ipAddress}");
+        log_message('notice', "[SECURITY] Failed Pasien OTP request for non-existent user: {$username}, IP: {$ipAddress}");
         return redirect()->back()->withInput()->with('error', 'Kombinasi Akun dan Nomor WhatsApp tidak cocok dengan data pasien terdaftar.');
     }
 
-    $this->db->table('password_resets')
+    $dbPasienWa = !empty($pasien['no_hp']) ? normalize_whatsapp($pasien['no_hp']) : '';
+
+    if ($normPhone !== $dbPasienWa) {
+        usleep(rand(300000, 600000));
+        log_message('notice', "[SECURITY] Failed Pasien OTP phone mismatch for username: {$username}, IP: {$ipAddress}");
+        return redirect()->back()->withInput()->with('error', 'Kombinasi Akun dan Nomor WhatsApp tidak cocok dengan data pasien terdaftar.');
+    }
+
+    // Cek cooldown 60 detik jika ada permintaan OTP sebelumnya yang masih aktif
+    $activeOtp = $this->db->table('password_resets')
         ->where('role', 'pasien')
         ->where('user_id', $pasien['id'])
         ->where('used_at', null)
-        ->update(['used_at' => date('Y-m-d H:i:s')]);
+        ->orderBy('id', 'DESC')
+        ->get()->getRowArray();
+
+    if ($activeOtp) {
+        $elapsed = time() - strtotime($activeOtp['created_at']);
+        if ($elapsed < 60) {
+            $wait = 60 - $elapsed;
+            return redirect()->to('/pasien/otp-verifikasi')->with('error', "Harap tunggu {$wait} detik sebelum meminta kode OTP kembali.");
+        }
+        // Nonaktifkan OTP lama
+        $this->db->table('password_resets')
+            ->where('id', $activeOtp['id'])
+            ->update(['used_at' => date('Y-m-d H:i:s')]);
+    }
 
     $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
     $otpHash = password_hash($otp, PASSWORD_DEFAULT);
@@ -2667,9 +2769,8 @@ public function prosesLupaSandiPasien()
     $sent = $this->sendWhatsAppOtp($normPhone, $otp, 'pasien');
 
     if (!$sent) {
-        // Gagal kirim — JANGAN bocorkan OTP ke tampilan
         log_message('error', "[LUPA SANDI PASIEN] Gagal mengirim OTP ke {$normPhone}");
-        return redirect()->to('/lupa-sandi')->with('error', 'Gagal mengirim kode OTP ke WhatsApp. Pastikan nomor WhatsApp aktif dan coba lagi dalam beberapa saat.');
+        return redirect()->to('/lupa-sandi')->with('error', 'Gagal mengirim kode OTP ke WhatsApp. Pastikan koneksi gateway aktif dan coba lagi dalam beberapa saat.');
     }
 
     session()->set('reset_flow_pasien', [
@@ -2701,12 +2802,58 @@ public function otpVerifikasiPasien()
     }
 
     $remainingSeconds = max(0, strtotime($record['expires_at']) - time());
-    $maskedPhone = $this->maskPhoneNumber($record['whatsapp_number']);
+    $cooldownRemaining = max(0, 60 - (time() - strtotime($record['created_at'])));
+    $maskedPhone = mask_whatsapp($record['whatsapp_number']);
 
     return view('pages/pasien_otp_verifikasi', [
-        'masked_phone'      => $maskedPhone,
-        'remaining_seconds' => $remainingSeconds,
+        'masked_phone'       => $maskedPhone,
+        'remaining_seconds'  => $remainingSeconds,
+        'cooldown_remaining' => $cooldownRemaining,
     ]);
+}
+
+public function kirimUlangOtpPasien()
+{
+    $flow = session()->get('reset_flow_pasien');
+    if (!$flow || empty($flow['reset_id'])) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Sesi verifikasi tidak ditemukan. Silakan ajukan OTP kembali.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('id', $flow['reset_id'])
+        ->where('role', 'pasien')
+        ->where('used_at', null)
+        ->get()->getRowArray();
+
+    if (!$record) {
+        session()->remove('reset_flow_pasien');
+        return redirect()->to('/lupa-sandi')->with('error', 'Sesi verifikasi telah berakhir atau tidak valid.');
+    }
+
+    $elapsed = time() - strtotime($record['created_at']);
+    if ($elapsed < 60) {
+        $wait = 60 - $elapsed;
+        return redirect()->to('/pasien/otp-verifikasi')->with('error', "Harap tunggu {$wait} detik sebelum meminta kode OTP baru.");
+    }
+
+    $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+    $otpHash = password_hash($otp, PASSWORD_DEFAULT);
+    $expiresAt = date('Y-m-d H:i:s', time() + 300);
+
+    $this->db->table('password_resets')->where('id', $record['id'])->update([
+        'otp_hash'   => $otpHash,
+        'attempts'   => 0,
+        'expires_at' => $expiresAt,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    $sent = $this->sendWhatsAppOtp($record['whatsapp_number'], $otp, 'pasien');
+    if (!$sent) {
+        log_message('error', "[KIRIM ULANG OTP PASIEN] Gagal mengirim OTP ke {$record['whatsapp_number']}");
+        return redirect()->to('/pasien/otp-verifikasi')->with('error', 'Gagal mengirim kode OTP ke WhatsApp. Pastikan koneksi WhatsApp Gateway aktif.');
+    }
+
+    return redirect()->to('/pasien/otp-verifikasi')->with('success', 'Kode OTP baru berhasil dikirim ke WhatsApp Anda. Silakan cek pesan masuk.');
 }
 
 public function prosesOtpVerifikasiPasien()
@@ -2730,7 +2877,7 @@ public function prosesOtpVerifikasiPasien()
     if ((int)$record['attempts'] >= 5) {
         $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
         session()->remove('reset_flow_pasien');
-        return redirect()->to('/lupa-sandi')->with('error', 'Batas percobaan OTP tercapai (maksimal 5 kali). Sesi dinonaktifkan.');
+        return redirect()->to('/lupa-sandi')->with('error', 'Batas percobaan OTP tercapai (maksimal 5 kali). Sesi dinonaktifkan demi keamanan.');
     }
 
     if (strtotime($record['expires_at']) < time()) {
@@ -2837,7 +2984,7 @@ public function prosesResetSandiPasien()
     }
 
     $newPassword = (string)$this->request->getPost('password');
-    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT, ['cost' => 12]);
+    $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
 
     $this->db->table('pasien')->where('id', $record['user_id'])->update([
         'password' => $hashedPassword,
@@ -2857,8 +3004,6 @@ public function prosesResetSandiPasien()
 
     return redirect()->to('/login_pasien')->with('success', '✅ Kata sandi akun Anda berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.');
 }
-
-
 
 }
 

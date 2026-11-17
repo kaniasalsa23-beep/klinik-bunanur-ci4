@@ -267,7 +267,7 @@
 
             <div class="group">
                 <label>Nama Layanan Medis</label>
-                <input type="text" name="nama" placeholder="Contoh: Pemeriksaan Kehamilan (ANC) Lengkap" required>
+                <input type="text" name="nama" placeholder="Nama Layanan Medis (ANC, Imunisasi, Baby Spa, dll)" required>
             </div>
 
             <div class="group">

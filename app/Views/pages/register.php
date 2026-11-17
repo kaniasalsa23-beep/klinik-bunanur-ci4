@@ -250,7 +250,7 @@
             <div class="form-grid">
                 <div class="cyber-input-group">
                     <i class='bx bx-phone'></i>
-                    <input type="text" name="no_hp" class="cyber-input" placeholder="Nomor WhatsApp" required>
+                    <input type="text" name="no_hp" class="cyber-input" placeholder="Masukkan Nomor WhatsApp" required>
                 </div>
 
                 <div class="cyber-input-group">

@@ -1,0 +1,33 @@
+# ----------------------------------------------------------------------
+# Klinik Bunanur - CodeIgniter 4 Root Apache Configuration
+# Shared Hosting (InfinityFree / cPanel) & Local Apache Compatible
+# ----------------------------------------------------------------------
+
+# Disable Directory Browsing
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    Options +FollowSymlinks
+    RewriteEngine On
+
+    # Block direct browser access to sensitive files and folders
+    RewriteRule ^(\.env|\.git|app|system|writable|tests|composer\.(json|lock)|phpunit\.xml) - [F,L,NC]
+
+    # If the request is already for public folder, let it pass
+    RewriteCond %{REQUEST_URI} ^/public/ [NC]
+    RewriteRule ^ - [L]
+
+    # Rewrite all root and non-public requests into the public/ directory
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    RewriteRule ^$ public/ [L]
+</IfModule>
+
+# Fallback error handling
+<IfModule !mod_rewrite.c>
+    ErrorDocument 404 public/index.php
+</IfModule>
+
+ServerSignature Off

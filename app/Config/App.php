@@ -22,14 +22,13 @@ class App extends BaseConfig
      * Allowed Hostnames in the Site URL other than the hostname in the baseURL.
      * If you want to accept multiple Hostnames, set this.
      *
-     * E.g.,
-     * When your site URL ($baseURL) is 'http://example.com/', and your site
-     * also accepts 'http://media.example.com/' and 'http://accounts.example.com/':
-     *     ['media.example.com', 'accounts.example.com']
-     *
      * @var list<string>
      */
-    public array $allowedHostnames = [];
+    public array $allowedHostnames = [
+        'klinikbunanur.infinityfreeapp.com',
+        'localhost',
+        '127.0.0.1',
+    ];
 
     /**
      * --------------------------------------------------------------------------
@@ -40,7 +39,7 @@ class App extends BaseConfig
      * something else. If you have configured your web server to remove this file
      * from your site URIs, set this variable to an empty string.
      */
-    public string $indexPage = 'index.php';
+    public string $indexPage = '';
 
     /**
      * --------------------------------------------------------------------------
@@ -199,4 +198,40 @@ class App extends BaseConfig
      * @see http://www.w3.org/TR/CSP/
      */
     public bool $CSPEnabled = false;
+
+    /**
+     * --------------------------------------------------------------------------
+     * Fonnte WhatsApp Gateway API Token
+     * --------------------------------------------------------------------------
+     * Token used for sending WhatsApp OTP server-to-server.
+     */
+    public string $fonnteToken = '';
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->fonnteToken = (string)env('FONNTE_TOKEN', (string)env('WHATSAPP_API_TOKEN', ''));
+
+        // Dynamic base URL detection for XAMPP local & InfinityFree production
+        if ($envBase = env('app.baseURL')) {
+            $this->baseURL = rtrim($envBase, '/') . '/';
+        } elseif (isset($_SERVER['HTTP_HOST'])) {
+            $isHttps = (
+                (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+                (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443) ||
+                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
+                (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') ||
+                (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false)
+            );
+            $protocol = $isHttps ? 'https://' : 'http://';
+            $host = $_SERVER['HTTP_HOST'];
+
+            $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+            $dir = trim(dirname($scriptName), '/');
+            $sub = ($dir !== '' && $dir !== '.') ? '/' . $dir . '/' : '/';
+
+            $this->baseURL = $protocol . $host . $sub;
+        }
+    }
 }

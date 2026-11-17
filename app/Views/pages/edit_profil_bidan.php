@@ -412,6 +412,7 @@ textarea {
                 <input type="text"
                        name="whatsapp"
                        value="<?= esc($bidan['whatsapp'] ?? '') ?>"
+                       placeholder="Masukkan Nomor WhatsApp Terdaftar"
                        required>
             </div>
         </div>
@@ -599,7 +600,7 @@ textarea {
 
             <div class="group" style="margin-bottom:15px;">
                 <label>Judul Kegiatan / Layanan</label>
-                <input type="text" name="judul_galeri" placeholder="Contoh: Pelayanan ANC Rutin Posyandu">
+                <input type="text" name="judul_galeri" placeholder="Judul Dokumentasi Layanan / Galeri">
             </div>
             
             <div class="group" style="margin-bottom:15px;">

@@ -13,3 +13,8 @@
  *
  * @see: https://codeigniter.com/user_guide/extending/common.html
  */
+
+// Load centralized WhatsApp helper functions
+if (file_exists(APPPATH . 'Helpers/whatsapp_helper.php')) {
+    require_once APPPATH . 'Helpers/whatsapp_helper.php';
+}

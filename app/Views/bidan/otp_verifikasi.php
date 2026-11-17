@@ -312,7 +312,9 @@
             <div class="auth-footer-links">
                 <div>
                     Tidak menerima kode? 
-                    <a href="<?= base_url('bidan/lupa-sandi') ?>">Kirim Ulang OTP</a>
+                    <a href="<?= base_url('bidan/kirim-ulang-otp') ?>" id="btnResendOtp">
+                        Kirim Ulang OTP <span id="resendTimerSpan" style="display:none; font-weight: 500; color: var(--text-muted);">(<span id="resendCountdown">60</span>s)</span>
+                    </a>
                 </div>
                 <div style="margin-top: 10px;">
                     <a href="<?= base_url('login_bidan') ?>" style="color: var(--text-muted);">
@@ -330,10 +332,14 @@
 
     <script>
         let secondsRemaining = <?= (int)($remaining_seconds ?? 300) ?>;
-        const timerElem = document.getElementById('timerCountdown');
-        const timerBadge = document.getElementById('timerBadge');
-        const otpInput = document.getElementById('otpInput');
-        const btnSubmit = document.getElementById('btnSubmitOtp');
+        let resendCooldown   = <?= (int)($cooldown_remaining ?? 60) ?>;
+        const timerElem      = document.getElementById('timerCountdown');
+        const timerBadge     = document.getElementById('timerBadge');
+        const otpInput       = document.getElementById('otpInput');
+        const btnSubmit      = document.getElementById('btnSubmitOtp');
+        const btnResend      = document.getElementById('btnResendOtp');
+        const resendSpan     = document.getElementById('resendTimerSpan');
+        const resendCount    = document.getElementById('resendCountdown');
 
         function updateCountdown() {
             if (secondsRemaining <= 0) {
@@ -358,7 +364,23 @@
             setTimeout(updateCountdown, 1000);
         }
 
+        function updateResendCooldown() {
+            if (resendCooldown > 0) {
+                btnResend.style.pointerEvents = 'none';
+                btnResend.style.opacity = '0.6';
+                resendSpan.style.display = 'inline';
+                resendCount.innerText = resendCooldown;
+                resendCooldown--;
+                setTimeout(updateResendCooldown, 1000);
+            } else {
+                btnResend.style.pointerEvents = 'auto';
+                btnResend.style.opacity = '1';
+                resendSpan.style.display = 'none';
+            }
+        }
+
         updateCountdown();
+        updateResendCooldown();
 
         otpInput.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
