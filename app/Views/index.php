@@ -283,30 +283,39 @@
             font-size: 46px;
             font-weight: 800;
             line-height: 1.15;
-            color: #4c0519;
+            color: #2d1b24 !important;
             letter-spacing: -1px;
             margin-bottom: 12px;
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: #2d1b24 !important;
         }
 
         .hero-content h1 span {
-            background: linear-gradient(135deg, #f43f5e 0%, #ec4899 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #c2255c !important;
+            -webkit-text-fill-color: #c2255c !important;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
 
         .hero-content h3 {
             font-size: 20px;
             font-weight: 700;
-            color: var(--primary-rose);
+            color: #c2255c !important;
             margin-bottom: 16px;
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: #c2255c !important;
         }
 
         .hero-content p {
             font-size: 16px;
             line-height: 1.8;
-            color: #64748b;
+            color: #5c4350 !important;
             margin-bottom: 32px;
             max-width: 560px;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
 
         .hero-cta-group {
@@ -353,14 +362,19 @@
             font-family: var(--font-heading);
             font-size: 34px;
             font-weight: 800;
-            color: #4c0519;
+            color: #2d1b24 !important;
             margin-bottom: 20px;
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: #2d1b24 !important;
         }
 
-        .tentang-text p {
+        .tentang-text p, .tentang-biografi {
             font-size: 15.5px;
             line-height: 1.85;
-            color: #334155;
+            color: #5c4350 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
 
         .tentang-img-frame {
@@ -506,13 +520,18 @@
             font-family: var(--font-heading);
             font-size: 36px;
             font-weight: 800;
-            color: #4c0519;
+            color: #2d1b24 !important;
             margin-bottom: 10px;
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: #2d1b24 !important;
         }
 
         .section-header-center p {
-            color: #64748b;
+            color: #5c4350 !important;
             font-size: 15.5px;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
 
         /* Horizontal Testimoni Slider */
@@ -884,8 +903,8 @@
                 <div class="badge-cyber badge-rose" style="margin-bottom: 14px;">
                     ✨ KLINIK PRATAMA KEBIDANAN
                 </div>
-                <h3 style="color: #4c0519; font-size: 22px; font-weight: 800; margin-bottom: 6px;">BUNANUR CLINIC</h3>
-                <p style="color: #64748b; font-size: 13.5px; margin-bottom: 0;">Pendampingan Kesehatan Ibu & Tumbuh Kembang Buah Hati Terpercaya</p>
+                <h3 style="color: #2d1b24 !important; font-size: 22px; font-weight: 800; margin-bottom: 6px; opacity: 1 !important; visibility: visible !important; -webkit-text-fill-color: #2d1b24 !important;">BUNANUR CLINIC</h3>
+                <p style="color: #5c4350 !important; font-size: 13.5px; margin-bottom: 0; opacity: 1 !important; visibility: visible !important;">Pendampingan Kesehatan Ibu & Tumbuh Kembang Buah Hati Terpercaya</p>
             </div>
         </div>
 
@@ -894,14 +913,14 @@
             <div class="badge-cyber badge-rose" style="margin-bottom: 18px;">
                 🌸 Gentle Care For Mother & Baby
             </div>
-            <h1>
-                <?= esc($profil['hero_judul'] ?? 'Selamat Datang di BUNANUR') ?>
+            <h1 style="color: #2d1b24 !important; opacity: 1 !important; visibility: visible !important; -webkit-text-fill-color: #2d1b24 !important;">
+                <?= !empty(trim($profil['hero_judul'] ?? '')) ? esc($profil['hero_judul']) : 'Perawatan Lembut untuk Ibu dan Anak' ?>
             </h1>
-            <h3>
-                <?= esc($profil['spesialis'] ?? 'Klinik Pratama & Perawatan Ibu & Anak') ?>
+            <h3 style="color: #c2255c !important; opacity: 1 !important; visibility: visible !important; -webkit-text-fill-color: #c2255c !important;">
+                <?= !empty(trim($profil['spesialis'] ?? '')) ? esc($profil['spesialis']) : 'Klinik Pratama & Perawatan Ibu & Anak' ?>
             </h3>
-            <p>
-                <?= esc($profil['hero_subjudul'] ?? 'Layanan medis berstandar tinggi yang mendampingi setiap langkah Bunda, mulai dari masa kehamilan, persalinan lembut, hingga perawatan tumbuh kembang buah hati.') ?>
+            <p style="color: #5c4350 !important; opacity: 1 !important; visibility: visible !important;">
+                <?= !empty(trim($profil['hero_subjudul'] ?? '')) ? esc($profil['hero_subjudul']) : 'Layanan medis berstandar tinggi yang mendampingi setiap langkah Bunda, mulai dari masa kehamilan, persalinan lembut, hingga perawatan tumbuh kembang buah hati.' ?>
             </p>
 
             <div class="hero-cta-group">
@@ -929,9 +948,9 @@
                 <div class="badge-cyber badge-rose" style="margin-bottom: 16px;">
                     <i class='bx bx-heart'></i> Dedikasi Penuh Kasih
                 </div>
-                <h2>Tentang Bidan Bunanur</h2>
-                <p class="tentang-biografi">
-                    <?= nl2br(esc($profil['tentang'] ?? 'Klinik Bunanur didirikan dengan visi menghadirkan perawatan kebidanan yang hangat, profesional, dan berbasis bukti untuk mendukung kesehatan ibu dan anak.')) ?>
+                <h2 style="color: #2d1b24 !important; opacity: 1 !important; visibility: visible !important; -webkit-text-fill-color: #2d1b24 !important;">Tentang Bidan Bunanur</h2>
+                <p class="tentang-biografi" style="color: #5c4350 !important; opacity: 1 !important; visibility: visible !important;">
+                    <?= !empty(trim($profil['tentang'] ?? '')) ? nl2br(esc($profil['tentang'])) : 'Klinik Bunanur didirikan dengan visi menghadirkan perawatan kebidanan yang hangat, profesional, dan berbasis bukti untuk mendukung kesehatan ibu dan anak.' ?>
                 </p>
             </div>
             <div class="tentang-img-frame" data-tilt data-tilt-max="6">
@@ -949,8 +968,8 @@
             <div class="badge-cyber badge-rose" style="margin-bottom: 12px;">
                 <i class='bx bx-images'></i> Dokumentasi Pelayanan
             </div>
-            <h2>Fasilitas & Tindakan Medis</h2>
-            <p>Berbagai momen pelayanan prima kami untuk bunda dan buah hati tercinta</p>
+            <h2 style="color: #2d1b24 !important; opacity: 1 !important; visibility: visible !important; -webkit-text-fill-color: #2d1b24 !important;">Fasilitas & Tindakan Medis</h2>
+            <p style="color: #5c4350 !important; opacity: 1 !important; visibility: visible !important;">Berbagai momen pelayanan prima kami untuk bunda dan buah hati tercinta</p>
         </div>
 
         <div class="gallery-container">
@@ -978,7 +997,7 @@
 
             <!-- Floating Hero Overlay Card (3D Tilt) -->
             <div class="gallery-overlay-box glass-card-3d" data-tilt data-tilt-max="5">
-                <h3>Teman Setia Ibu Dan Buah Hati</h3>
+                <h3 style="color: #2d1b24 !important; opacity: 1 !important; visibility: visible !important; -webkit-text-fill-color: #2d1b24 !important;">Teman Setia Ibu Dan Buah Hati</h3>
                 <a href="<?= base_url('daftar-layanan') ?>" class="btn-cyber-primary" style="padding: 10px 24px; font-size: 14px;">
                     <i class='bx bx-grid'></i> Jelajahi Seluruh Layanan Medis
                 </a>
@@ -992,8 +1011,8 @@
             <div class="badge-cyber badge-rose" style="margin-bottom: 12px;">
                 <i class='bx bxs-star'></i> Cerita Nyata Pasien
             </div>
-            <h2>Kata Bunda Tercinta</h2>
-            <p>Pengalaman nyata keluarga yang mempercayakan perawatannya di Klinik Bunanur</p>
+            <h2 style="color: #2d1b24 !important; opacity: 1 !important; visibility: visible !important; -webkit-text-fill-color: #2d1b24 !important;">Kata Bunda Tercinta</h2>
+            <p style="color: #5c4350 !important; opacity: 1 !important; visibility: visible !important;">Pengalaman nyata keluarga yang mempercayakan perawatannya di Klinik Bunanur</p>
         </div>
 
         <div class="testimoni-slider-wrapper">
@@ -1076,9 +1095,9 @@
             <div class="footer-col">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
                     <img src="<?= base_url('assets/Logo.png') ?>" alt="Logo Bunanur" style="width: 44px; height: 44px; border-radius: 12px; background: #ffffff; padding: 5px; border: 1px solid rgba(244,63,94,0.3); box-shadow: 0 4px 10px rgba(244,63,94,0.15);">
-                    <h3 style="font-family: var(--font-heading); font-size: 22px; font-weight: 800; color: #4c0519;">BUNANUR CARE</h3>
+                    <h3 style="font-family: var(--font-heading); font-size: 22px; font-weight: 800; color: #2d1b24 !important;">BUNANUR CARE</h3>
                 </div>
-                <p style="color: #64748b; font-size: 14.5px; line-height: 1.75; max-width: 360px;">
+                <p style="color: #5c4350 !important; font-size: 14.5px; line-height: 1.75; max-width: 360px;">
                     Klinik Pratama Kebidanan yang didedikasikan untuk kesehatan ibu dan tumbuh kembang optimal anak dengan pelayanan penuh kasih dan profesional.
                 </p>
             </div>

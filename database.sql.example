@@ -191,8 +191,8 @@ CREATE TABLE `tentang_slider` (
 -- ==============================================================================
 
 -- 1. Default Bidan Administrator (Password: BidanBunanur#2026!)
-INSERT INTO `bidan` (`id`, `nama`, `username`, `password`, `foto`, `email`, `whatsapp`, `spesialis`, `status`) VALUES
-(1, 'Bidan Nurhayati, S.Keb.CHE', 'bidan_bunanur', '$2y$10$dSecSxwGMvgtKwIM/hosieN/skVKbS.SDp2lvZYfnZssT5MhcjbgG', 'default.png', 'bidan.bunanur@gmail.com', '081234567890', 'Bidan Praktik Mandiri & Mom-Baby Spa', 'offline');
+INSERT INTO `bidan` (`id`, `nama`, `username`, `password`, `foto`, `email`, `whatsapp`, `spesialis`, `hero_judul`, `hero_subjudul`, `tentang`, `status`) VALUES
+(1, 'Bidan Nurhayati, S.Keb.CHE', 'bidan_bunanur', '$2y$10$dSecSxwGMvgtKwIM/hosieN/skVKbS.SDp2lvZYfnZssT5MhcjbgG', 'default.png', 'bidan.bunanur@gmail.com', '081234567890', 'Bidan Praktik Mandiri & Mom-Baby Spa', 'Perawatan Lembut untuk Ibu dan Anak', 'Klinik Bunanur Baby Spa & Terapi Ibu dan Bayi', 'Klinik Bunanur hadir sebagai sahabat ibu dan buah hati, memberikan perawatan dengan penuh kasih, kenyamanan, dan sentuhan lembut di setiap tahap kehidupan. Bukan hanya sebagai tempat pelayanan kesehatan, tetapi juga sebagai partner terpercaya keluarga dalam menciptakan generasi yang sehat, bahagia, dan tumbuh optimal.', 'offline');
 
 -- 2. Default Pasien User (Password: BundaSarah#2026!)
 INSERT INTO `pasien` (`id`, `nama`, `username`, `email`, `no_hp`, `alamat`, `password`, `foto`) VALUES

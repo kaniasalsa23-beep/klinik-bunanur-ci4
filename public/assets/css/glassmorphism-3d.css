@@ -873,3 +873,28 @@ input[type="checkbox"]:checked + .cyber-switch::after {
     .testi-nav-btn.next-btn { right: 4px; }
 }
 
+/* ==========================================================================
+   HIGH CONTRAST & ACCESSIBILITY: HERO & SECTION HEADINGS & PARAGRAPHS
+   Guarantees 100% visible, high-contrast text across all landing pages
+   ========================================================================== */
+.hero-content h1, .hero-section h1, .tentang-text h2, .section-header-center h2 {
+    color: #2d1b24 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    -webkit-text-fill-color: #2d1b24 !important;
+}
+
+.hero-content h3, .hero-section h3, .tentang-text h3, .hero-content h1 span, .hero-card-3d h3 {
+    color: #c2255c !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    -webkit-text-fill-color: #c2255c !important;
+}
+
+.hero-content p, .hero-section p, .tentang-text p, .tentang-biografi, .section-header-center p, .hero-card-3d p {
+    color: #5c4350 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+
