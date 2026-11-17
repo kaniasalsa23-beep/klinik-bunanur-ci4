@@ -2247,41 +2247,51 @@ private function sendWhatsAppOtp(string $targetPhone, string $otp, string $role)
     $gatewayUrl = env('WHATSAPP_GATEWAY_URL', 'https://api.fonnte.com/send');
     $apiToken   = trim((string)env('WHATSAPP_API_TOKEN', ''));
 
+    // Gunakan token dari .env atau fallback token placeholder Fonnte
     if (empty($apiToken)) {
-        return false;
+        $apiToken = '[TEMPEL_TOKEN_FONNTE_ANDA]';
     }
 
-    $message = "🔐 *KODE OTP KLINIK BUNANUR*\n\n"
+    $message = "\xF0\x9F\x94\x90 *KODE OTP KLINIK BUNANUR*\n\n"
              . "Halo " . ($role === 'bidan' ? 'Bidan' : 'Bunda/Pasien') . ",\n"
              . "Kode verifikasi pemulihan kata sandi Anda adalah:\n\n"
-             . "👉 *{$otp}*\n\n"
-             . "Kode ini berlaku selama *5 menit*. JANGAN berikan kode ini kepada siapa pun demi keamanan akun Anda.\n\n"
+             . "\xF0\x9F\x91\x89 *{$otp}*\n\n"
+             . "Kode ini bersifat rahasia dan berlaku selama *5 menit*. JANGAN berikan kode ini kepada siapa pun demi keamanan akun Anda.\n\n"
              . "_Klinik Bunanur Care & Baby Spa_";
 
     try {
         $curl = curl_init();
         curl_setopt_array($curl, [
-            CURLOPT_URL => $gatewayUrl,
+            CURLOPT_URL            => 'https://api.fonnte.com/send',
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 8,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => [
-                'target' => $targetPhone,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => [
+                'target'  => $targetPhone,
                 'message' => $message,
             ],
-            CURLOPT_HTTPHEADER => [
+            CURLOPT_HTTPHEADER     => [
                 "Authorization: {$apiToken}",
             ],
         ]);
         $response = curl_exec($curl);
-        $err = curl_error($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $err      = curl_error($curl);
         curl_close($curl);
 
         if ($err) {
-            log_message('error', "[WHATSAPP OTP] Gateway error: {$err}");
+            log_message('error', "[WHATSAPP OTP] cURL error: {$err}");
             return false;
         }
-        return true;
+
+        $decoded = json_decode($response, true);
+        if ($httpCode >= 200 && $httpCode < 300 && !empty($decoded['status'])) {
+            log_message('info', "[WHATSAPP OTP] Berhasil mengirim OTP ke {$targetPhone} (role: {$role})");
+            return true;
+        }
+
+        log_message('error', "[WHATSAPP OTP] Fonnte API gagal — HTTP {$httpCode}, response: {$response}");
+        return false;
     } catch (\Throwable $e) {
         log_message('error', "[WHATSAPP OTP] Exception: " . $e->getMessage());
         return false;
@@ -2371,23 +2381,21 @@ public function prosesLupaSandiBidan()
     $resetId = $this->db->insertID();
 
     $sent = $this->sendWhatsAppOtp($normPhone, $otp, 'bidan');
-    $directWaUrl = 'https://wa.me/' . $normPhone . '?text=' . urlencode("Halo Bidan Nurhayati, kode OTP pemulihan kata sandi Anda adalah: {$otp} (berlaku 5 menit).");
+
+    if (!$sent) {
+        // Gagal kirim — JANGAN bocorkan OTP ke tampilan
+        log_message('error', "[LUPA SANDI BIDAN] Gagal mengirim OTP ke {$normPhone}");
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Gagal mengirim kode OTP ke WhatsApp. Pastikan nomor WhatsApp aktif dan coba lagi dalam beberapa saat.');
+    }
 
     session()->set('reset_flow_bidan', [
         'reset_id'    => $resetId,
         'user_id'     => $bidan['id'],
         'whatsapp'    => $normPhone,
         'expires_at'  => time() + 300,
-        'sandbox_otp' => $sent ? null : $otp,
-        'wa_url'      => $directWaUrl,
     ]);
 
-    if (!$sent) {
-        session()->setFlashdata('sandbox_otp', $otp);
-        session()->setFlashdata('direct_wa_url', $directWaUrl);
-    }
-
-    return redirect()->to('/bidan/otp-verifikasi')->with('success', 'Kode OTP 6-digit berhasil digenerate dan dikirim ke WhatsApp Anda.');
+    return redirect()->to('/bidan/otp-verifikasi')->with('success', 'Kode OTP 6-digit berhasil dikirim ke WhatsApp Anda. Silakan cek pesan masuk.');
 }
 
 public function otpVerifikasiBidan()
@@ -2411,11 +2419,11 @@ public function otpVerifikasiBidan()
     $remainingSeconds = max(0, strtotime($record['expires_at']) - time());
     $maskedPhone = $this->maskPhoneNumber($record['whatsapp_number']);
 
-    return view('pages/bidan_otp_verifikasi', [
+    $viewPath = is_file(APPPATH . 'Views/bidan/otp_verifikasi.php') ? 'bidan/otp_verifikasi' : 'pages/bidan_otp_verifikasi';
+
+    return view($viewPath, [
         'masked_phone'      => $maskedPhone,
         'remaining_seconds' => $remainingSeconds,
-        'sandbox_otp'       => session()->getFlashdata('sandbox_otp') ?? ($flow['sandbox_otp'] ?? null),
-        'direct_wa_url'     => session()->getFlashdata('direct_wa_url') ?? ($flow['wa_url'] ?? null),
     ]);
 }
 
@@ -2657,23 +2665,21 @@ public function prosesLupaSandiPasien()
     $resetId = $this->db->insertID();
 
     $sent = $this->sendWhatsAppOtp($normPhone, $otp, 'pasien');
-    $directWaUrl = 'https://wa.me/' . $normPhone . '?text=' . urlencode("Halo {$pasien['nama']}, kode OTP verifikasi lupa kata sandi Klinik Bunanur Anda adalah: {$otp} (berlaku 5 menit).");
+
+    if (!$sent) {
+        // Gagal kirim — JANGAN bocorkan OTP ke tampilan
+        log_message('error', "[LUPA SANDI PASIEN] Gagal mengirim OTP ke {$normPhone}");
+        return redirect()->to('/lupa-sandi')->with('error', 'Gagal mengirim kode OTP ke WhatsApp. Pastikan nomor WhatsApp aktif dan coba lagi dalam beberapa saat.');
+    }
 
     session()->set('reset_flow_pasien', [
         'reset_id'    => $resetId,
         'user_id'     => $pasien['id'],
         'whatsapp'    => $normPhone,
         'expires_at'  => time() + 300,
-        'sandbox_otp' => $sent ? null : $otp,
-        'wa_url'      => $directWaUrl,
     ]);
 
-    if (!$sent) {
-        session()->setFlashdata('sandbox_otp', $otp);
-        session()->setFlashdata('direct_wa_url', $directWaUrl);
-    }
-
-    return redirect()->to('/pasien/otp-verifikasi')->with('success', 'Kode OTP 6-digit berhasil digenerate dan dikirim ke WhatsApp Anda.');
+    return redirect()->to('/pasien/otp-verifikasi')->with('success', 'Kode OTP 6-digit berhasil dikirim ke WhatsApp Anda. Silakan cek pesan masuk.');
 }
 
 public function otpVerifikasiPasien()
@@ -2700,8 +2706,6 @@ public function otpVerifikasiPasien()
     return view('pages/pasien_otp_verifikasi', [
         'masked_phone'      => $maskedPhone,
         'remaining_seconds' => $remainingSeconds,
-        'sandbox_otp'       => session()->getFlashdata('sandbox_otp') ?? ($flow['sandbox_otp'] ?? null),
-        'direct_wa_url'     => session()->getFlashdata('direct_wa_url') ?? ($flow['wa_url'] ?? null),
     ]);
 }
 

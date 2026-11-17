@@ -167,45 +167,6 @@
             box-shadow: 0 0 0 5px rgba(244, 63, 94, 0.18);
         }
 
-        /* Sandbox Box */
-        .sandbox-otp-box {
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            border: 1.5px dashed #22c55e;
-            border-radius: 18px;
-            padding: 16px;
-            margin-bottom: 22px;
-            text-align: center;
-        }
-
-        .sandbox-otp-code {
-            font-family: var(--font-heading);
-            font-size: 24px;
-            font-weight: 800;
-            color: #15803d;
-            letter-spacing: 6px;
-            margin: 6px 0;
-        }
-
-        .btn-wa-direct {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            background: #16a34a;
-            color: #ffffff;
-            border-radius: 12px;
-            font-size: 12.5px;
-            font-weight: 700;
-            text-decoration: none;
-            transition: all 0.25s ease;
-            margin-top: 8px;
-        }
-
-        .btn-wa-direct:hover {
-            background: #15803d;
-            transform: scale(1.02);
-            color: #ffffff;
-        }
 
         .alert-cyber-error {
             background: #fff1f2;
@@ -321,26 +282,7 @@
                 </div>
             <?php endif; ?>
 
-            <!-- WhatsApp OTP Sandbox & Direct Link Box (Active when API Token unconfigured or local demo) -->
-            <?php if(!empty($sandbox_otp)): ?>
-                <div class="sandbox-otp-box">
-                    <div style="font-size: 11px; font-weight: 800; color: #166534; letter-spacing: 0.5px; text-transform: uppercase;">
-                        <i class='bx bx-shield-quarter'></i> WhatsApp OTP Sandbox / Demo Mode
-                    </div>
-                    <div style="font-size: 12.5px; color: #166534; margin-top: 4px;">
-                        Gunakan kode OTP berikut untuk pengujian cepat:
-                    </div>
-                    <div class="sandbox-otp-code" id="sandboxCodeDisplay">
-                        <?= esc($sandbox_otp) ?>
-                    </div>
-                    <?php if(!empty($direct_wa_url)): ?>
-                        <a href="<?= esc($direct_wa_url) ?>" target="_blank" class="btn-wa-direct">
-                            <i class='bx bxl-whatsapp' style="font-size: 16px;"></i>
-                            Buka WhatsApp Langsung
-                        </a>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
+
 
             <form action="<?= base_url('pasien/otp-verifikasi') ?>" method="POST" id="otpPasienForm">
                 <?= csrf_field() ?>
