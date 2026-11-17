@@ -54,6 +54,19 @@ class PasienAuthFilter implements FilterInterface
                 JwtAuth::setCookie($token);
             }
 
+            // Validasi keberadaan akun aktif di Database (Anti-IDOR & Account Lockdown Guard)
+            $db = Database::connect();
+            $checkActive = $db->table('pasien')->where('id', $pasien['id'])->get()->getRowArray();
+            if (!$checkActive) {
+                log_message('warning', "[SECURITY RBAC] Stale/deleted Pasien session detected: pasien_id='{$pasien['id']}', IP=" . $request->getIPAddress());
+                $session->remove('pasien');
+                $session->remove('id_pasien');
+                $session->remove('role');
+                JwtAuth::clearCookie();
+                return redirect()->to('/login_pasien')
+                    ->with('error', 'Akun Pasien tidak ditemukan atau telah dinonaktifkan.');
+            }
+
             return null;
         }
 

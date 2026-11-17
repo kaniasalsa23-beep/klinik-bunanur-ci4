@@ -60,6 +60,19 @@ class BidanAuthFilter implements FilterInterface
                 JwtAuth::setCookie($token);
             }
 
+            // Validasi keberadaan akun aktif di Database (Anti-IDOR & Privilege Escalation Guard)
+            $db = Database::connect();
+            $checkActive = $db->table('bidan')->where('id', $bidan['id'])->get()->getRowArray();
+            if (!$checkActive) {
+                log_message('warning', "[SECURITY RBAC] Stale/deleted Bidan session detected: bidan_id='{$bidan['id']}', IP=" . $request->getIPAddress());
+                $session->remove('bidan');
+                $session->remove('id_bidan');
+                $session->remove('role');
+                JwtAuth::clearCookie();
+                return redirect()->to('/login_bidan')
+                    ->with('error', 'Akun Bidan tidak ditemukan atau telah dicabut wewenangnya.');
+            }
+
             return null;
         }
 
