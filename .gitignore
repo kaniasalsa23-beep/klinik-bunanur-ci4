@@ -53,6 +53,10 @@ Vagrantfile
 *.db
 !database.sql.example
 
+# Generated reports & documents (EdLink submission files)
+*.pdf
+laporan_cybersecurity.html
+
 
 #-------------------------
 # Temporary Files
