@@ -850,78 +850,19 @@ public function registerProses()
 
 // ==================== BIDAN ====================
 
-public function registerBidanForm()
+/**
+ * ZERO-TRUST LOCKDOWN: Bidan self-registration is permanently disabled.
+ * Only the authorized administrator (Bidan Nurhayati) has access.
+ * Any direct URL access to register_bidan returns 403 Forbidden.
+ */
+public function registerBidanBlocked()
 {
-    return view('pages/register_bidan');
-}
-
-public function registerBidan()
-{
-    $ipAddress = $this->request->getIPAddress();
-    $endpoint  = 'register_bidan';
-
-    // 1. Rate Limiting: 5 Permintaan per 15 Menit (900 detik)
-    $rateCheck = RateLimiter::checkEndpointRateLimit($ipAddress, $endpoint, 5, 900);
-    if (!$rateCheck['allowed']) {
-        return redirect()->back()
-            ->withInput()
-            ->with('error', $rateCheck['message']);
-    }
-
-    // 2. Server-side Input Validation dengan Strong Password Policy
-    $rules = [
-        'nama'       => 'required|min_length[3]|max_length[100]',
-        'username'   => 'required|min_length[3]|max_length[50]|alpha_numeric',
-        'password'   => [
-            'rules'  => 'required|min_length[8]|regex_match[/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};\':"\\\\|,.<>\/?~`]).{8,}$/]',
-            'errors' => [
-                'required'    => 'Password wajib diisi.',
-                'min_length'  => 'Password minimal harus berjumlah 8 karakter.',
-                'regex_match' => 'Password wajib memuat kombinasi: minimal 1 huruf besar (A-Z), 1 huruf kecil (a-z), 1 angka (0-9), dan 1 simbol/karakter khusus (!@#$%^&* dll).'
-            ]
-        ],
-        'konfirmasi' => [
-            'rules'  => 'required|matches[password]',
-            'errors' => [
-                'required' => 'Konfirmasi password wajib diisi.',
-                'matches'  => 'Konfirmasi password tidak cocok dengan password yang dimasukkan.'
-            ]
-        ]
-    ];
-
-    if (!$this->validate($rules)) {
-        return redirect()->back()
-            ->withInput()
-            ->with('error', $this->validator->listErrors());
-    }
-
-    $nama       = trim((string)$this->request->getPost('nama'));
-    $username   = trim((string)$this->request->getPost('username'));
-    $password   = (string)$this->request->getPost('password');
-
-    $cek = $this->db->table('bidan')
-        ->where('username', $username)
-        ->get()
-        ->getRowArray();
-
-    if ($cek) {
-        return redirect()->back()
-            ->withInput()
-            ->with('error', 'Username sudah digunakan.');
-    }
-
-    // 3. Enforce Bcrypt Cost Factor 12
-    $hashedPassword = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
-
-    $this->db->table('bidan')->insert([
-        'nama'      => $nama,
-        'username'  => $username,
-        'password'  => $hashedPassword,
-        'status'    => 'offline'
-    ]);
+    $ip   = $this->request->getIPAddress();
+    $path = $this->request->getUri()->getPath();
+    log_message('warning', "[SECURITY LOCKDOWN] Unauthorized Bidan registration attempt blocked: IP='{$ip}', URI='{$path}'");
 
     return redirect()->to('/login_bidan')
-        ->with('success', 'Registrasi Bidan berhasil. Silakan login.');
+        ->with('error', '⚠️ Akses ditolak (403 Forbidden): Pendaftaran akun Bidan bersifat eksklusif dan hanya dapat dilakukan oleh administrator klinik. Hubungi manajemen klinik untuk informasi lebih lanjut.');
 }
 
 public function loginBidanForm()
@@ -2276,4 +2217,504 @@ public function logout()
 
     return redirect()->to('/')->with('success', 'Anda telah berhasil keluar dari akun.');
 }
+
+// ===========================================================================
+// FORGOT PASSWORD — PASIEN (3-Step Cryptographic Flow)
+// ===========================================================================
+
+/**
+ * STEP 1 — Pasien: Show forgot password form
+ */
+public function pasienLupaSandi()
+{
+    if (session()->has('pasien')) {
+        return redirect()->to('/dashboard_pasien');
+    }
+    $captcha = $this->generateCaptcha();
+    return view('pages/pasien_lupa_sandi', ['captcha' => $captcha]);
+}
+
+/**
+ * STEP 1 — Pasien: Verify identity (username/email + No. HP), generate OTP & token
+ */
+public function pasienLupaSandiProses()
+{
+    $ip       = $this->request->getIPAddress();
+    $endpoint = 'pasien_lupa_sandi';
+
+    $rateCheck = RateLimiter::checkEndpointRateLimit($ip, $endpoint, 3, 900);
+    if (!$rateCheck['allowed']) {
+        return redirect()->back()->withInput()->with('error', $rateCheck['message']);
+    }
+
+    $rules = [
+        'identifier' => 'required|min_length[3]|max_length[100]',
+        'no_hp'      => 'required|min_length[8]|max_length[20]',
+        'captcha'    => 'required',
+    ];
+    if (!$this->validate($rules)) {
+        return redirect()->back()->withInput()->with('error', 'Semua bidang wajib diisi dengan benar.');
+    }
+
+    $userCaptcha = trim((string)$this->request->getPost('captcha'));
+    $expected    = (string)session()->get('captcha_answer');
+    session()->remove('captcha_answer');
+    if ($expected === '' || $userCaptcha !== $expected) {
+        return redirect()->back()->withInput()->with('error', 'Verifikasi CAPTCHA salah. Silakan coba kembali.');
+    }
+
+    $identifier = trim((string)$this->request->getPost('identifier'));
+    $noHp       = preg_replace('/\D/', '', trim((string)$this->request->getPost('no_hp')));
+
+    $pasien = $this->db->table('pasien')
+        ->groupStart()
+            ->where('username', $identifier)
+            ->orWhere('email', $identifier)
+        ->groupEnd()
+        ->get()->getRowArray();
+
+    $genericMsg = 'Jika data yang Anda masukkan cocok dengan akun kami, kode OTP akan segera tersedia. Periksa kembali data Anda.';
+
+    $dbNoHp = preg_replace('/\D/', '', $pasien['no_hp'] ?? '');
+    if (!$pasien || !hash_equals($dbNoHp, $noHp)) {
+        log_message('notice', "[SECURITY] Pasien lupa sandi — not matched: IP={$ip}");
+        usleep(rand(300000, 600000));
+        return redirect()->back()->with('info', $genericMsg);
+    }
+
+    // Invalidate previous unused tokens
+    $this->db->table('password_resets')
+        ->where('user_type', 'pasien')
+        ->where('user_id', $pasien['id'])
+        ->whereNull('used_at')
+        ->update(['used_at' => date('Y-m-d H:i:s')]);
+
+    $otp       = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+    $token     = bin2hex(random_bytes(32));
+    $otpHash   = hash('sha256', $otp);
+    $tokenHash = hash('sha256', $token);
+    $expiresAt = date('Y-m-d H:i:s', time() + 900);
+
+    $this->db->table('password_resets')->insert([
+        'user_type'  => 'pasien',
+        'user_id'    => $pasien['id'],
+        'identifier' => $identifier,
+        'token_hash' => $tokenHash,
+        'otp_hash'   => $otpHash,
+        'attempts'   => 0,
+        'expires_at' => $expiresAt,
+        'used_at'    => null,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    $smtpConfigured = !empty(env('email.SMTPHost', ''));
+    if ($smtpConfigured && !empty($pasien['email'])) {
+        try {
+            $emailService = \Config\Services::email();
+            $emailService->setFrom(env('email.fromEmail', 'noreply@klinikbunanur.id'), 'Klinik Bunanur');
+            $emailService->setTo($pasien['email']);
+            $emailService->setSubject('Kode OTP Pemulihan Kata Sandi — Klinik Bunanur');
+            $emailService->setMailType('html');
+            $emailService->setMessage('<p>Halo <strong>' . esc($pasien['nama']) . '</strong>,</p><p>Kode OTP: <strong style="font-size:24px;letter-spacing:4px;">' . $otp . '</strong></p><p>Berlaku 15 menit.</p>');
+            $emailService->send();
+        } catch (\Exception $e) {
+            log_message('error', '[FORGOT PASIEN] SMTP: ' . $e->getMessage());
+            $smtpConfigured = false;
+        }
+    } else {
+        $smtpConfigured = false;
+    }
+
+    if (!$smtpConfigured) {
+        session()->setFlashdata('sandbox_otp', $otp);
+        session()->setFlashdata('sandbox_email', $pasien['email'] ?? $identifier);
+    }
+
+    return redirect()->to('/lupa-sandi/verifikasi/' . urlencode($token))->with('info', $genericMsg);
+}
+
+/**
+ * STEP 2 — Pasien: Show OTP verification form
+ */
+public function pasienVerifikasiOtp(string $token)
+{
+    $token     = urldecode($token);
+    $tokenHash = hash('sha256', $token);
+
+    $record = $this->db->table('password_resets')
+        ->where('token_hash', $tokenHash)
+        ->where('user_type', 'pasien')
+        ->whereNull('used_at')
+        ->where('expires_at >', date('Y-m-d H:i:s'))
+        ->get()->getRowArray();
+
+    if (!$record) {
+        return redirect()->to('/lupa-sandi')
+            ->with('error', 'Token tidak valid atau kedaluwarsa. Silakan mulai proses ulang.');
+    }
+
+    return view('pages/pasien_otp_verifikasi', [
+        'token'         => $token,
+        'expires_at'    => $record['expires_at'],
+        'sandbox_otp'   => session()->getFlashdata('sandbox_otp'),
+        'sandbox_email' => session()->getFlashdata('sandbox_email'),
+    ]);
+}
+
+/**
+ * STEP 2 — Pasien: Verify OTP submission
+ */
+public function pasienVerifikasiOtpProses()
+{
+    $token     = trim((string)$this->request->getPost('token'));
+    $otp       = trim((string)$this->request->getPost('otp'));
+    $tokenHash = hash('sha256', $token);
+
+    if (empty($token) || empty($otp)) {
+        return redirect()->back()->with('error', 'Token dan OTP wajib diisi.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('token_hash', $tokenHash)
+        ->where('user_type', 'pasien')
+        ->whereNull('used_at')
+        ->where('expires_at >', date('Y-m-d H:i:s'))
+        ->get()->getRowArray();
+
+    if (!$record) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Token tidak valid atau kedaluwarsa.');
+    }
+
+    if ((int)$record['attempts'] >= 5) {
+        $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
+        return redirect()->to('/lupa-sandi')->with('error', 'Terlalu banyak percobaan. Token dinonaktifkan. Minta OTP baru.');
+    }
+
+    $this->db->table('password_resets')->where('id', $record['id'])->update(['attempts' => (int)$record['attempts'] + 1]);
+
+    if (!hash_equals($record['otp_hash'], hash('sha256', $otp))) {
+        $remaining = 4 - (int)$record['attempts'];
+        return redirect()->to('/lupa-sandi/verifikasi/' . urlencode($token))
+            ->with('error', 'Kode OTP salah. Sisa percobaan: ' . max(0, $remaining) . ' kali.')
+            ->with('token_retry', $token);
+    }
+
+    return redirect()->to('/lupa-sandi/reset/' . urlencode($token))->with('success', 'OTP terverifikasi!');
+}
+
+/**
+ * STEP 3 — Pasien: Show new password form
+ */
+public function pasienResetSandi(string $token)
+{
+    $token     = urldecode($token);
+    $tokenHash = hash('sha256', $token);
+
+    $record = $this->db->table('password_resets')
+        ->where('token_hash', $tokenHash)->where('user_type', 'pasien')
+        ->whereNull('used_at')->where('expires_at >', date('Y-m-d H:i:s'))
+        ->where('attempts >', 0)->get()->getRowArray();
+
+    if (!$record) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Sesi reset tidak valid.');
+    }
+
+    return view('pages/pasien_reset_sandi', ['token' => $token]);
+}
+
+/**
+ * STEP 3 — Pasien: Apply new password with bcrypt + session invalidation
+ */
+public function pasienResetSandiProses()
+{
+    $token     = trim((string)$this->request->getPost('token'));
+    $password  = (string)$this->request->getPost('password');
+    $tokenHash = hash('sha256', $token);
+
+    $record = $this->db->table('password_resets')
+        ->where('token_hash', $tokenHash)->where('user_type', 'pasien')
+        ->whereNull('used_at')->where('expires_at >', date('Y-m-d H:i:s'))
+        ->get()->getRowArray();
+
+    if (!$record) {
+        return redirect()->to('/lupa-sandi')->with('error', 'Token tidak valid atau kedaluwarsa.');
+    }
+
+    $rules = [
+        'password' => [
+            'rules'  => 'required|min_length[8]|regex_match[/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};\':"\\|,.<>\/?~`]).{8,}$/]',
+            'errors' => [
+                'required'    => 'Kata sandi baru wajib diisi.',
+                'min_length'  => 'Kata sandi minimal 8 karakter.',
+                'regex_match' => 'Kata sandi wajib memuat: huruf besar, huruf kecil, angka, dan simbol khusus.'
+            ]
+        ],
+        'confirm' => [
+            'rules'  => 'required|matches[password]',
+            'errors' => ['matches' => 'Konfirmasi kata sandi tidak cocok.']
+        ]
+    ];
+    if (!$this->validate($rules)) {
+        return redirect()->back()->withInput()->with('error', $this->validator->listErrors())->with('token', $token);
+    }
+
+    $this->db->table('pasien')->where('id', $record['user_id'])->update(['password' => password_hash($password, PASSWORD_BCRYPT, ['cost' => 12])]);
+    $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
+
+    if (session()->has('pasien') && (string)session()->get('pasien')['id'] === (string)$record['user_id']) {
+        JwtAuth::clearCookie();
+        session()->destroy();
+    }
+
+    log_message('info', "[SECURITY] Pasien password reset: user_id={$record['user_id']}");
+    return redirect()->to('/login_pasien')->with('success', '✅ Kata sandi berhasil diperbarui. Silakan login.');
+}
+
+// ===========================================================================
+// FORGOT PASSWORD — BIDAN (3-Step Cryptographic Flow + Master Recovery PIN)
+// ===========================================================================
+
+/**
+ * STEP 1 — Bidan: Show forgot password form
+ */
+public function bidanLupaSandi()
+{
+    if (session()->has('bidan')) {
+        return redirect()->to('/dashboard_bidan');
+    }
+    $captcha = $this->generateCaptcha();
+    return view('pages/bidan_lupa_sandi', ['captcha' => $captcha]);
+}
+
+/**
+ * STEP 1 — Bidan: Verify identity via username + Master Recovery PIN from .env
+ */
+public function bidanLupaSandiProses()
+{
+    $ip       = $this->request->getIPAddress();
+    $endpoint = 'bidan_lupa_sandi';
+
+    $rateCheck = RateLimiter::checkEndpointRateLimit($ip, $endpoint, 3, 900);
+    if (!$rateCheck['allowed']) {
+        return redirect()->back()->withInput()->with('error', $rateCheck['message']);
+    }
+
+    $rules = [
+        'identifier'   => 'required|min_length[3]|max_length[100]',
+        'recovery_pin' => 'required|min_length[4]|max_length[100]',
+        'captcha'      => 'required',
+    ];
+    if (!$this->validate($rules)) {
+        return redirect()->back()->withInput()->with('error', 'Semua bidang wajib diisi dengan benar.');
+    }
+
+    $userCaptcha = trim((string)$this->request->getPost('captcha'));
+    $expected    = (string)session()->get('captcha_answer');
+    session()->remove('captcha_answer');
+    if ($expected === '' || $userCaptcha !== $expected) {
+        return redirect()->back()->withInput()->with('error', 'Verifikasi CAPTCHA salah. Silakan coba kembali.');
+    }
+
+    $identifier  = trim((string)$this->request->getPost('identifier'));
+    $recoveryPin = (string)$this->request->getPost('recovery_pin');
+
+    $bidan = $this->db->table('bidan')
+        ->groupStart()
+            ->where('username', $identifier)
+            ->orWhere('email', $identifier)
+        ->groupEnd()
+        ->get()->getRowArray();
+
+    $genericMsg = 'Jika data verifikasi Anda benar, kode OTP akan segera tersedia. Periksa kembali kredensial Anda.';
+
+    $masterPin = (string)env('BIDAN_MASTER_RECOVERY_CODE', '');
+    $pinValid  = $masterPin !== '' && hash_equals(hash('sha256', $masterPin), hash('sha256', $recoveryPin));
+
+    if (!$bidan || !$pinValid) {
+        log_message('warning', "[SECURITY] Bidan lupa sandi — invalid: IP={$ip}, id={$identifier}");
+        usleep(rand(300000, 600000));
+        return redirect()->back()->with('info', $genericMsg);
+    }
+
+    // Invalidate previous unused tokens
+    $this->db->table('password_resets')
+        ->where('user_type', 'bidan')->where('user_id', $bidan['id'])->whereNull('used_at')
+        ->update(['used_at' => date('Y-m-d H:i:s')]);
+
+    $otp       = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+    $token     = bin2hex(random_bytes(32));
+    $otpHash   = hash('sha256', $otp);
+    $tokenHash = hash('sha256', $token);
+    $expiresAt = date('Y-m-d H:i:s', time() + 900);
+
+    $this->db->table('password_resets')->insert([
+        'user_type'  => 'bidan',
+        'user_id'    => $bidan['id'],
+        'identifier' => $identifier,
+        'token_hash' => $tokenHash,
+        'otp_hash'   => $otpHash,
+        'attempts'   => 0,
+        'expires_at' => $expiresAt,
+        'used_at'    => null,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    $smtpConfigured = !empty(env('email.SMTPHost', ''));
+    $adminEmail     = env('BIDAN_ADMIN_EMAIL', $bidan['email'] ?? '');
+    if ($smtpConfigured && !empty($adminEmail)) {
+        try {
+            $emailService = \Config\Services::email();
+            $emailService->setFrom(env('email.fromEmail', 'noreply@klinikbunanur.id'), 'Klinik Bunanur');
+            $emailService->setTo($adminEmail);
+            $emailService->setSubject('[ADMIN] Kode OTP Pemulihan Kata Sandi Bidan — Klinik Bunanur');
+            $emailService->setMailType('html');
+            $emailService->setMessage('<p>Kepada <strong>' . esc($bidan['nama']) . '</strong>,</p><p>Kode OTP: <strong style="font-size:28px;letter-spacing:6px;color:#f43f5e;">' . $otp . '</strong></p><p>Berlaku 15 menit. Jangan bagikan kepada siapapun.</p>');
+            $emailService->send();
+        } catch (\Exception $e) {
+            log_message('error', '[BIDAN FORGOT] SMTP: ' . $e->getMessage());
+            $smtpConfigured = false;
+        }
+    } else {
+        $smtpConfigured = false;
+    }
+
+    if (!$smtpConfigured) {
+        session()->setFlashdata('sandbox_otp', $otp);
+        session()->setFlashdata('sandbox_email', $adminEmail);
+    }
+
+    return redirect()->to('/bidan/lupa-sandi/verifikasi/' . urlencode($token))->with('info', $genericMsg);
+}
+
+/**
+ * STEP 2 — Bidan: Show OTP verification form
+ */
+public function bidanVerifikasiOtp(string $token)
+{
+    $token     = urldecode($token);
+    $tokenHash = hash('sha256', $token);
+
+    $record = $this->db->table('password_resets')
+        ->where('token_hash', $tokenHash)->where('user_type', 'bidan')
+        ->whereNull('used_at')->where('expires_at >', date('Y-m-d H:i:s'))
+        ->get()->getRowArray();
+
+    if (!$record) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Token tidak valid atau kedaluwarsa.');
+    }
+
+    return view('pages/bidan_otp_verifikasi', [
+        'token'         => $token,
+        'expires_at'    => $record['expires_at'],
+        'sandbox_otp'   => session()->getFlashdata('sandbox_otp'),
+        'sandbox_email' => session()->getFlashdata('sandbox_email'),
+    ]);
+}
+
+/**
+ * STEP 2 — Bidan: Verify OTP submission
+ */
+public function bidanVerifikasiOtpProses()
+{
+    $token     = trim((string)$this->request->getPost('token'));
+    $otp       = trim((string)$this->request->getPost('otp'));
+    $tokenHash = hash('sha256', $token);
+
+    if (empty($token) || empty($otp)) {
+        return redirect()->back()->with('error', 'Token dan OTP wajib diisi.');
+    }
+
+    $record = $this->db->table('password_resets')
+        ->where('token_hash', $tokenHash)->where('user_type', 'bidan')
+        ->whereNull('used_at')->where('expires_at >', date('Y-m-d H:i:s'))
+        ->get()->getRowArray();
+
+    if (!$record) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Token tidak valid atau kedaluwarsa.');
+    }
+
+    if ((int)$record['attempts'] >= 5) {
+        $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Terlalu banyak percobaan. Token dinonaktifkan.');
+    }
+
+    $this->db->table('password_resets')->where('id', $record['id'])->update(['attempts' => (int)$record['attempts'] + 1]);
+
+    if (!hash_equals($record['otp_hash'], hash('sha256', $otp))) {
+        $remaining = 4 - (int)$record['attempts'];
+        return redirect()->to('/bidan/lupa-sandi/verifikasi/' . urlencode($token))
+            ->with('error', 'Kode OTP salah. Sisa percobaan: ' . max(0, $remaining) . ' kali.');
+    }
+
+    return redirect()->to('/bidan/lupa-sandi/reset/' . urlencode($token))->with('success', 'OTP terverifikasi!');
+}
+
+/**
+ * STEP 3 — Bidan: Show new password form
+ */
+public function bidanResetSandi(string $token)
+{
+    $token     = urldecode($token);
+    $tokenHash = hash('sha256', $token);
+
+    $record = $this->db->table('password_resets')
+        ->where('token_hash', $tokenHash)->where('user_type', 'bidan')
+        ->whereNull('used_at')->where('expires_at >', date('Y-m-d H:i:s'))
+        ->where('attempts >', 0)->get()->getRowArray();
+
+    if (!$record) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Sesi reset tidak valid.');
+    }
+
+    return view('pages/bidan_reset_sandi', ['token' => $token]);
+}
+
+/**
+ * STEP 3 — Bidan: Apply new password with bcrypt cost 12 + session/JWT invalidation
+ */
+public function bidanResetSandiProses()
+{
+    $token     = trim((string)$this->request->getPost('token'));
+    $password  = (string)$this->request->getPost('password');
+    $tokenHash = hash('sha256', $token);
+
+    $record = $this->db->table('password_resets')
+        ->where('token_hash', $tokenHash)->where('user_type', 'bidan')
+        ->whereNull('used_at')->where('expires_at >', date('Y-m-d H:i:s'))
+        ->get()->getRowArray();
+
+    if (!$record) {
+        return redirect()->to('/bidan/lupa-sandi')->with('error', 'Token tidak valid atau kedaluwarsa.');
+    }
+
+    $rules = [
+        'password' => [
+            'rules'  => 'required|min_length[8]|regex_match[/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};\':"\\|,.<>\/?~`]).{8,}$/]',
+            'errors' => [
+                'required'    => 'Kata sandi baru wajib diisi.',
+                'min_length'  => 'Kata sandi minimal 8 karakter.',
+                'regex_match' => 'Kata sandi wajib memuat: huruf besar, huruf kecil, angka, dan simbol khusus.'
+            ]
+        ],
+        'confirm' => [
+            'rules'  => 'required|matches[password]',
+            'errors' => ['matches' => 'Konfirmasi kata sandi tidak cocok.']
+        ]
+    ];
+    if (!$this->validate($rules)) {
+        return redirect()->back()->withInput()->with('error', $this->validator->listErrors())->with('token', $token);
+    }
+
+    $this->db->table('bidan')->where('id', $record['user_id'])->update(['password' => password_hash($password, PASSWORD_BCRYPT, ['cost' => 12])]);
+    $this->db->table('password_resets')->where('id', $record['id'])->update(['used_at' => date('Y-m-d H:i:s')]);
+
+    if (session()->has('bidan') && (string)session()->get('bidan')['id'] === (string)$record['user_id']) {
+        JwtAuth::clearCookie();
+        session()->destroy();
+    }
+
+    log_message('info', "[SECURITY] Bidan password reset: user_id={$record['user_id']}");
+    return redirect()->to('/login_bidan')->with('success', '✅ Kata sandi Bidan berhasil diperbarui. Silakan login.');
+}
+
 }

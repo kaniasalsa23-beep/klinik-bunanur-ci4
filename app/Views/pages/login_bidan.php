@@ -311,9 +311,10 @@
             </form>
 
             <div class="auth-footer-links">
-                <div>
-                    Belum terdaftar sebagai bidan klinik? 
-                    <a href="<?= base_url('register_bidan') ?>">Daftar Akun Bidan</a>
+                <div style="margin-bottom: 10px;">
+                    <a href="<?= base_url('bidan/lupa-sandi') ?>" style="display: inline-flex; align-items: center; gap: 5px;">
+                        <i class='bx bx-key'></i> Lupa Kata Sandi?
+                    </a>
                 </div>
                 <a href="<?= base_url('/') ?>" class="home-back-link">
                     <i class='bx bx-arrow-back'></i> Kembali ke Beranda Klinik

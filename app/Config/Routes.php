@@ -18,11 +18,32 @@ $routes->post('register_proses', 'Home::registerProses');
 $routes->get('login_pasien', 'Home::loginForm');
 $routes->post('login_pasien', 'Home::login');
 
-// Autentikasi Bidan (Publik / Guest)
-$routes->get('register_bidan', 'Home::registerBidanForm');
-$routes->post('register_bidan', 'Home::registerBidan');
+// Autentikasi Bidan (Publik / Guest — HANYA LOGIN)
+// BIDAN REGISTRATION LOCKDOWN: Semua upaya pendaftaran Bidan publik ditolak (403 Forbidden)
+$routes->get('register_bidan', 'Home::registerBidanBlocked');
+$routes->post('register_bidan', 'Home::registerBidanBlocked');
 $routes->get('login_bidan', 'Home::loginBidanForm');
 $routes->post('login_bidan', 'Home::prosesLoginBidan');
+
+// ==========================================
+// FORGOT PASSWORD — PASIEN (/lupa-sandi)
+// ==========================================
+$routes->get('lupa-sandi', 'Home::pasienLupaSandi');
+$routes->post('lupa-sandi/proses', 'Home::pasienLupaSandiProses');
+$routes->get('lupa-sandi/verifikasi/(:segment)', 'Home::pasienVerifikasiOtp/$1');
+$routes->post('lupa-sandi/verifikasi/proses', 'Home::pasienVerifikasiOtpProses');
+$routes->get('lupa-sandi/reset/(:segment)', 'Home::pasienResetSandi/$1');
+$routes->post('lupa-sandi/reset/proses', 'Home::pasienResetSandiProses');
+
+// ==========================================
+// FORGOT PASSWORD — BIDAN (/bidan/lupa-sandi)
+// ==========================================
+$routes->get('bidan/lupa-sandi', 'Home::bidanLupaSandi');
+$routes->post('bidan/lupa-sandi/proses', 'Home::bidanLupaSandiProses');
+$routes->get('bidan/lupa-sandi/verifikasi/(:segment)', 'Home::bidanVerifikasiOtp/$1');
+$routes->post('bidan/lupa-sandi/verifikasi/proses', 'Home::bidanVerifikasiOtpProses');
+$routes->get('bidan/lupa-sandi/reset/(:segment)', 'Home::bidanResetSandi/$1');
+$routes->post('bidan/lupa-sandi/reset/proses', 'Home::bidanResetSandiProses');
 
 // ==========================================
 // PASIEN PROTECTED ROUTES (RBAC: pasienAuth)

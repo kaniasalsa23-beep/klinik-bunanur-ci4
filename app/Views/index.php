@@ -1134,9 +1134,9 @@
             <!-- Kontak -->
             <div class="footer-col">
                 <h4>Hubungi Kami</h4>
-                <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', !empty($profil['whatsapp']) ? $profil['whatsapp'] : '081234567890') ?>" class="footer-contact-item" target="_blank">
+                <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', !empty($profil['whatsapp']) ? $profil['whatsapp'] : '085864549503') ?>" class="footer-contact-item" target="_blank">
                     <div class="contact-icon-box"><i class="fa-brands fa-whatsapp"></i></div>
-                    <span><?= esc(!empty($profil['whatsapp']) ? $profil['whatsapp'] : '0812-3456-7890') ?></span>
+                    <span><?= esc(!empty($profil['whatsapp']) ? $profil['whatsapp'] : '+62 858-6454-9503') ?></span>
                 </a>
 
                 <a href="mailto:<?= esc(!empty($profil['email']) ? $profil['email'] : 'bunanurclinic@gmail.com') ?>" class="footer-contact-item">
