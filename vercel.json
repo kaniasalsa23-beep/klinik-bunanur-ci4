@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "framework": null,
   "functions": {
     "api/index.php": {
       "runtime": "vercel-php@0.7.3"
@@ -24,20 +23,8 @@
       "dest": "/public/images/$1"
     },
     {
-      "src": "/uploads/(.*)",
-      "dest": "/public/uploads/$1"
-    },
-    {
       "src": "/favicon.ico",
       "dest": "/public/favicon.ico"
-    },
-    {
-      "src": "/robots.txt",
-      "dest": "/public/robots.txt"
-    },
-    {
-      "src": "/(.*\\.(?:css|js|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|pdf|txt|map))",
-      "dest": "/public/$1"
     },
     {
       "src": "/(.*)",
