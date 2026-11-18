@@ -56,13 +56,13 @@ $paths = new Paths();
 // Ensure writable directory exists in /tmp for serverless Vercel environment
 $isServerless = (
     getenv('VERCEL') || isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL']) ||
-    getenv('AWS_LAMBDA_FUNCTION_NAME') || isset($_SERVER['LAMBDA_TASK_ROOT'])
+    getenv('AWS_LAMBDA_FUNCTION_NAME') || isset($_SERVER['LAMBDA_TASK_ROOT']) ||
+    (DIRECTORY_SEPARATOR === '/' && is_dir('/tmp'))
 );
 if ($isServerless) {
-    $writable = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ci4_writable';
-    $subdirs = ['', '/cache', '/logs', '/session', '/debugbar', '/uploads'];
-    foreach ($subdirs as $sub) {
-        $dir = $writable . $sub;
+    $writable = '/tmp';
+    foreach (['cache', 'logs', 'session', 'debugbar', 'uploads'] as $sub) {
+        $dir = $writable . '/' . $sub;
         if (!is_dir($dir)) {
             @mkdir($dir, 0777, true);
         }
