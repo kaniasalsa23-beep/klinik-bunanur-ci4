@@ -131,7 +131,9 @@ _modules/*
 *.sublime-workspace
 *.sublime-project
 .phpintel
-/api/
+# /api/ (Allowed for Vercel serverless entry point api/index.php)
+!/api/
+!/api/**
 
 # Visual Studio Code
 .vscode/
