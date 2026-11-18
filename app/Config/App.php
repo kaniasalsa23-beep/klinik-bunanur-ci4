@@ -213,11 +213,18 @@ class App extends BaseConfig
 
         $this->fonnteToken = (string)env('FONNTE_TOKEN', (string)env('WHATSAPP_GATEWAY_TOKEN', (string)env('WHATSAPP_API_TOKEN', '')));
 
-        // Dynamic base URL detection for XAMPP local & InfinityFree production
-        if ($envBase = env('app.baseURL')) {
+        // Dynamic base URL detection for Vercel, InfinityFree production, & XAMPP local
+        $envBase = env('app.baseURL')
+            ?: (getenv('app_baseURL')
+            ?: (getenv('APP_BASEURL')
+            ?: ($_SERVER['app_baseURL'] ?? ($_ENV['app_baseURL'] ?? null))));
+
+        if ($envBase) {
             $this->baseURL = rtrim($envBase, '/') . '/';
-        } elseif (isset($_SERVER['HTTP_HOST'])) {
-            $isHttps = (
+        } elseif (isset($_SERVER['HTTP_HOST']) || isset($_SERVER['VERCEL_URL']) || isset($_ENV['VERCEL_URL'])) {
+            $isVercel = (getenv('VERCEL') || isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL_URL']));
+
+            $isHttps = $isVercel || (
                 (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
                 (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443) ||
                 (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
@@ -225,13 +232,21 @@ class App extends BaseConfig
                 (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false)
             );
             $protocol = $isHttps ? 'https://' : 'http://';
-            $host = $_SERVER['HTTP_HOST'];
+            $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['VERCEL_URL'] ?? ($_ENV['VERCEL_URL'] ?? 'localhost'));
 
             $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
             $dir = trim(dirname($scriptName), '/');
             $sub = ($dir !== '' && $dir !== '.') ? '/' . $dir . '/' : '/';
 
             $this->baseURL = $protocol . $host . $sub;
+        }
+
+        // Izinkan hostname runtime secara dinamis (misal domain Vercel *.vercel.app)
+        if (!empty($_SERVER['HTTP_HOST']) && !in_array($_SERVER['HTTP_HOST'], $this->allowedHostnames, true)) {
+            $this->allowedHostnames[] = $_SERVER['HTTP_HOST'];
+        }
+        if (!empty($_SERVER['VERCEL_URL']) && !in_array($_SERVER['VERCEL_URL'], $this->allowedHostnames, true)) {
+            $this->allowedHostnames[] = $_SERVER['VERCEL_URL'];
         }
     }
 }

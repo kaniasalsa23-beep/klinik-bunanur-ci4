@@ -25,23 +25,23 @@ class Database extends Config
      * @var array<string, mixed>
      */
     public array $default = [
-    'DSN'          => '',
-    'hostname'     => 'localhost',
-    'username'     => 'root',
-    'password'     => '',
-    'database'     => 'klinik_db',
-    'DBDriver'     => 'MySQLi',
-    'DBPrefix'     => '',
-    'pConnect'     => false,
-    'DBDebug'      => true,
-    'charset'      => 'utf8mb4',
-    'DBCollat'     => 'utf8mb4_general_ci',
-    'swapPre'      => '',
-    'encrypt'      => false,
-    'compress'     => false,
-    'strictOn'     => false,
-    'failover'     => [],
-    'port'         => 3306,
+        'DSN'          => '',
+        'hostname'     => 'localhost',
+        'username'     => 'root',
+        'password'     => '',
+        'database'     => 'klinik_db',
+        'DBDriver'     => 'MySQLi',
+        'DBPrefix'     => '',
+        'pConnect'     => false,
+        'DBDebug'      => true,
+        'charset'      => 'utf8mb4',
+        'DBCollat'     => 'utf8mb4_general_ci',
+        'swapPre'      => '',
+        'encrypt'      => ['ssl_verify' => false],
+        'compress'     => false,
+        'strictOn'     => false,
+        'failover'     => [],
+        'port'         => 3306,
         'numberNative' => false,
         'foundRows'    => false,
         'dateFormat'   => [
@@ -199,6 +199,74 @@ class Database extends Config
         // we don't overwrite live data on accident.
         if (ENVIRONMENT === 'testing') {
             $this->defaultGroup = 'tests';
+        }
+
+        // Helper to retrieve environment variable values across getenv, $_ENV, and $_SERVER
+        $getEnvVal = static function (array $keys) {
+            foreach ($keys as $key) {
+                if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') {
+                    return $_SERVER[$key];
+                }
+                if (isset($_ENV[$key]) && $_ENV[$key] !== '') {
+                    return $_ENV[$key];
+                }
+                $val = getenv($key);
+                if ($val !== false && $val !== '') {
+                    return $val;
+                }
+            }
+            return null;
+        };
+
+        // Kredensial database dari environment variables
+        $hostname = $getEnvVal(['database_default_hostname', 'DATABASE_DEFAULT_HOSTNAME', 'TIDB_HOST']);
+        if ($hostname !== null) {
+            $this->default['hostname'] = $hostname;
+        }
+
+        $database = $getEnvVal(['database_default_database', 'DATABASE_DEFAULT_DATABASE', 'TIDB_DATABASE']);
+        if ($database !== null) {
+            $this->default['database'] = $database;
+        }
+
+        $username = $getEnvVal(['database_default_username', 'DATABASE_DEFAULT_USERNAME', 'TIDB_USER']);
+        if ($username !== null) {
+            $this->default['username'] = $username;
+        }
+
+        $password = $getEnvVal(['database_default_password', 'DATABASE_DEFAULT_PASSWORD', 'TIDB_PASSWORD']);
+        if ($password !== null) {
+            $this->default['password'] = $password;
+        }
+
+        $port = $getEnvVal(['database_default_port', 'DATABASE_DEFAULT_PORT', 'TIDB_PORT']);
+        if ($port !== null) {
+            $this->default['port'] = (int) $port;
+        }
+
+        $driver = $getEnvVal(['database_default_DBDriver', 'DATABASE_DEFAULT_DBDRIVER']);
+        if ($driver !== null) {
+            $this->default['DBDriver'] = $driver;
+        }
+
+        // Konfigurasi SSL/TLS untuk koneksi TiDB Cloud / Vercel
+        $encryptEnv = $getEnvVal(['database_default_encrypt', 'DATABASE_DEFAULT_ENCRYPT']);
+        if ($encryptEnv !== null) {
+            if ($encryptEnv === 'false' || $encryptEnv === '0') {
+                $this->default['encrypt'] = false;
+            } else {
+                $this->default['encrypt'] = ['ssl_verify' => false];
+            }
+        } elseif (
+            !getenv('VERCEL') && !isset($_SERVER['VERCEL']) && !isset($_ENV['VERCEL']) &&
+            in_array($this->default['hostname'], ['localhost', '127.0.0.1'], true) &&
+            (int) $this->default['port'] === 3306
+        ) {
+            // Nonaktifkan SSL hanya saat berjalan lokal di XAMPP standar tanpa SSL
+            $this->default['encrypt'] = false;
+        } else {
+            // Aktifkan SSL/TLS untuk TiDB Cloud / remote database / Vercel
+            $this->default['encrypt'] = ['ssl_verify' => false];
         }
     }
 }

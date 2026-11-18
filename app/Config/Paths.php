@@ -87,4 +87,31 @@ class Paths
      * value - the directory should not be publicly accessible.
      */
     public string $envDirectory = __DIR__ . '/../../';
+
+    /**
+     * Constructor
+     *
+     * In serverless environments such as Vercel / AWS Lambda, the filesystem is strictly
+     * read-only except for the /tmp directory. Automatically redirect writableDirectory
+     * to a designated temporary directory with required subdirectories.
+     */
+    public function __construct()
+    {
+        $isServerless = (
+            getenv('VERCEL') || isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL']) ||
+            getenv('AWS_LAMBDA_FUNCTION_NAME') || isset($_SERVER['LAMBDA_TASK_ROOT'])
+        );
+
+        if ($isServerless) {
+            $writable = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ci4_writable';
+            $subdirs = ['', '/cache', '/logs', '/session', '/debugbar', '/uploads'];
+            foreach ($subdirs as $sub) {
+                $dir = $writable . $sub;
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0777, true);
+                }
+            }
+            $this->writableDirectory = $writable;
+        }
+    }
 }
