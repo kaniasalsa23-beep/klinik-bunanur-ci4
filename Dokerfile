@@ -1,0 +1,30 @@
+FROM php:8.2-apache
+
+# Install ekstensi PHP yang wajib untuk CodeIgniter 4 & TiDB Cloud (MySQLi, Intl, Mbstring)
+RUN apt-get update && apt-get install -y \
+    libicu-dev \
+    libzip-dev \
+    unzip \
+    git \
+    && docker-php-ext-install mysqli pdo pdo_mysql intl zip
+
+# Aktifkan mod_rewrite Apache agar routing CodeIgniter 4 berjalan normal
+RUN a2enmod rewrite
+
+# Arahkan DocumentRoot Apache langsung ke folder /public milik CodeIgniter 4
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Salin seluruh file proyek ke server
+COPY . /var/www/html
+
+# Install Composer dan dependensi vendor
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN composer install --no-dev --optimize-autoloader
+
+# Berikan hak akses tulis penuh ke folder writable (bebas error read-only!)
+RUN chown -R www-data:www-data /var/www/html/writable \
+    && chmod -R 775 /var/www/html/writable
+
+EXPOSE 80
