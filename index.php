@@ -15,39 +15,43 @@
 // CPANEL SSL PROXY: Force HTTPS — 5 metode deteksi
 // ============================================================
 
-// Method 1: Standard reverse proxy (nginx/Apache mod_proxy)
-if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) &&
-    strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') {
-    $_SERVER['HTTPS']       = 'on';
-    $_SERVER['SERVER_PORT'] = 443;
-}
+$host = (string)($_SERVER['HTTP_HOST'] ?? '');
+$isLocal = str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
 
-// Method 2: WHM/cPanel proprietary header
-if (isset($_SERVER['HTTP_X_FORWARDED_SSL']) &&
-    strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') {
-    $_SERVER['HTTPS']       = 'on';
-    $_SERVER['SERVER_PORT'] = 443;
-}
+if (!$isLocal) {
+    // Method 1: Standard reverse proxy (nginx/Apache mod_proxy)
+    if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) &&
+        strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') {
+        $_SERVER['HTTPS']       = 'on';
+        $_SERVER['SERVER_PORT'] = 443;
+    }
 
-// Method 3: Cloudflare CDN
-if (isset($_SERVER['HTTP_CF_VISITOR']) &&
-    strpos($_SERVER['HTTP_CF_VISITOR'], '"https"') !== false) {
-    $_SERVER['HTTPS']       = 'on';
-    $_SERVER['SERVER_PORT'] = 443;
-}
+    // Method 2: WHM/cPanel proprietary header
+    if (isset($_SERVER['HTTP_X_FORWARDED_SSL']) &&
+        strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') {
+        $_SERVER['HTTPS']       = 'on';
+        $_SERVER['SERVER_PORT'] = 443;
+    }
 
-// Method 4: Forwarded port
-if (isset($_SERVER['HTTP_X_FORWARDED_PORT']) &&
-    (int)$_SERVER['HTTP_X_FORWARDED_PORT'] === 443) {
-    $_SERVER['HTTPS']       = 'on';
-    $_SERVER['SERVER_PORT'] = 443;
-}
+    // Method 3: Cloudflare CDN
+    if (isset($_SERVER['HTTP_CF_VISITOR']) &&
+        strpos($_SERVER['HTTP_CF_VISITOR'], '"https"') !== false) {
+        $_SERVER['HTTPS']       = 'on';
+        $_SERVER['SERVER_PORT'] = 443;
+    }
 
-// Method 5: Domain lock — domain produksi ini SELALU HTTPS
-if (isset($_SERVER['HTTP_HOST']) &&
-    in_array($_SERVER['HTTP_HOST'], ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true)) {
-    $_SERVER['HTTPS']       = 'on';
-    $_SERVER['SERVER_PORT'] = 443;
+    // Method 4: Forwarded port
+    if (isset($_SERVER['HTTP_X_FORWARDED_PORT']) &&
+        (int)$_SERVER['HTTP_X_FORWARDED_PORT'] === 443) {
+        $_SERVER['HTTPS']       = 'on';
+        $_SERVER['SERVER_PORT'] = 443;
+    }
+
+    // Method 5: Domain lock — domain produksi ini SELALU HTTPS
+    if (in_array($host, ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true)) {
+        $_SERVER['HTTPS']       = 'on';
+        $_SERVER['SERVER_PORT'] = 443;
+    }
 }
 
 // Normalize SCRIPT_NAME to prevent /public/ prefix in URLs

@@ -16,7 +16,7 @@ class App extends BaseConfig
      *
      * E.g., http://example.com/
      */
-    public string $baseURL = 'https://klinikbunanur.my.id/';
+    public string $baseURL = 'http://localhost:8080/';
 
     /**
      * Allowed Hostnames in the Site URL other than the hostname in the baseURL.
@@ -25,11 +25,11 @@ class App extends BaseConfig
      * @var list<string>
      */
     public array $allowedHostnames = [
+        'localhost',
+        '127.0.0.1',
         'klinikbunanur.my.id',
         'www.klinikbunanur.my.id',
         'klinikbunanur.infinityfreeapp.com',
-        'localhost',
-        '127.0.0.1',
     ];
 
     /**
@@ -158,7 +158,7 @@ class App extends BaseConfig
      * secure, the user will be redirected to a secure version of the page
      * and the HTTP Strict Transport Security (HSTS) header will be set.
      */
-    public bool $forceGlobalSecureRequests = true;
+    public bool $forceGlobalSecureRequests = false;
 
     /**
      * --------------------------------------------------------------------------
@@ -215,37 +215,46 @@ class App extends BaseConfig
 
         $this->fonnteToken = (string)env('FONNTE_TOKEN', (string)env('WHATSAPP_GATEWAY_TOKEN', (string)env('WHATSAPP_API_TOKEN', '')));
 
-        // 1. CPANEL SSL PROXY: Deteksi dan normalisasi HTTPS sedini mungkin
-        if (
-            (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ||
-            ((int)($_SERVER['SERVER_PORT'] ?? 80) === 443) ||
-            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
-            (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') ||
-            (isset($_SERVER['HTTP_X_FORWARDED_SCHEME']) && strtolower($_SERVER['HTTP_X_FORWARDED_SCHEME']) === 'https') ||
-            (isset($_SERVER['HTTP_X_URL_SCHEME']) && strtolower($_SERVER['HTTP_X_URL_SCHEME']) === 'https') ||
-            (isset($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) === 'on') ||
-            (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false) ||
-            (isset($_SERVER['HTTP_X_FORWARDED_PORT']) && (int)$_SERVER['HTTP_X_FORWARDED_PORT'] === 443) ||
-            (isset($_SERVER['HTTP_HOST']) && in_array($_SERVER['HTTP_HOST'], ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true))
-        ) {
-            $_SERVER['HTTPS']       = 'on';
-            $_SERVER['SERVER_PORT'] = 443;
+        $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+        $isLocal = str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
+
+        // 1. CPANEL / REVERSE PROXY SSL: Deteksi dan normalisasi HTTPS sedini mungkin (HANYA untuk remote host)
+        if (!$isLocal) {
+            if (
+                (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ||
+                ((int)($_SERVER['SERVER_PORT'] ?? 80) === 443) ||
+                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
+                (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') ||
+                (isset($_SERVER['HTTP_X_FORWARDED_SCHEME']) && strtolower($_SERVER['HTTP_X_FORWARDED_SCHEME']) === 'https') ||
+                (isset($_SERVER['HTTP_X_URL_SCHEME']) && strtolower($_SERVER['HTTP_X_URL_SCHEME']) === 'https') ||
+                (isset($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) === 'on') ||
+                (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false) ||
+                (isset($_SERVER['HTTP_X_FORWARDED_PORT']) && (int)$_SERVER['HTTP_X_FORWARDED_PORT'] === 443) ||
+                in_array($host, ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true)
+            ) {
+                $_SERVER['HTTPS']       = 'on';
+                $_SERVER['SERVER_PORT'] = 443;
+            }
         }
 
         // 2. SELALU bersihkan indexPage agar route bersih tanpa /index.php/
         $this->indexPage = '';
 
-        // 3. Resolusi Base URL yang kebal cPanel reverse proxy & Vercel
+        // 3. Resolusi Base URL yang kebal cPanel reverse proxy, InfinityFree & Localhost
         $envBase = env('app.baseURL')
             ?: (getenv('app_baseURL')
             ?: (getenv('APP_BASEURL')
             ?: ($_SERVER['app_baseURL'] ?? ($_ENV['app_baseURL'] ?? null))));
 
-        if ($envBase) {
-            $this->baseURL = rtrim(trim((string)$envBase, "'\""), '/') . '/';
-        } elseif (isset($_SERVER['HTTP_HOST']) && in_array($_SERVER['HTTP_HOST'], ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true)) {
-            // Domain produksi cPanel SELALU HTTPS
+        if (isset($_SERVER['HTTP_HOST']) && (
+            in_array($_SERVER['HTTP_HOST'], ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true) ||
+            str_contains($_SERVER['HTTP_HOST'], 'infinityfreeapp.com')
+        )) {
+            // Domain produksi cPanel / InfinityFree SELALU HTTPS
             $this->baseURL = 'https://' . $_SERVER['HTTP_HOST'] . '/';
+            $this->forceGlobalSecureRequests = true;
+        } elseif ($envBase) {
+            $this->baseURL = rtrim(trim((string)$envBase, "'\""), '/') . '/';
         } elseif (isset($_SERVER['VERCEL_URL']) || isset($_ENV['VERCEL_URL'])) {
             $host = $_SERVER['VERCEL_URL'] ?? $_ENV['VERCEL_URL'];
             $this->baseURL = 'https://' . $host . '/';
@@ -259,7 +268,10 @@ class App extends BaseConfig
         }
 
         // 4. Kunci HTTPS jika domain produksi
-        if (isset($_SERVER['HTTP_HOST']) && in_array($_SERVER['HTTP_HOST'], ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true)) {
+        if (isset($_SERVER['HTTP_HOST']) && (
+            in_array($_SERVER['HTTP_HOST'], ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true) ||
+            str_contains($_SERVER['HTTP_HOST'], 'infinityfreeapp.com')
+        )) {
             $this->forceGlobalSecureRequests = true;
             if (strpos($this->baseURL, 'http://') === 0) {
                 $this->baseURL = 'https://' . substr($this->baseURL, 7);
@@ -267,8 +279,11 @@ class App extends BaseConfig
         }
 
         // 5. Izinkan hostname runtime secara dinamis
-        if (!empty($_SERVER['HTTP_HOST']) && !in_array($_SERVER['HTTP_HOST'], $this->allowedHostnames, true)) {
-            $this->allowedHostnames[] = $_SERVER['HTTP_HOST'];
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            $rawHost = parse_url('http://' . $_SERVER['HTTP_HOST'], PHP_URL_HOST) ?: $_SERVER['HTTP_HOST'];
+            if (!in_array($rawHost, $this->allowedHostnames, true)) {
+                $this->allowedHostnames[] = $rawHost;
+            }
         }
         if (!empty($_SERVER['VERCEL_URL']) && !in_array($_SERVER['VERCEL_URL'], $this->allowedHostnames, true)) {
             $this->allowedHostnames[] = $_SERVER['VERCEL_URL'];

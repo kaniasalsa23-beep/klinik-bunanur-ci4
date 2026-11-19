@@ -48,27 +48,35 @@ class SecurityHeadersFilter implements FilterInterface
         // 5. Permissions / Feature Policy
         $response->setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
 
-        // 6. Strict Transport Security (HSTS) jika koneksi HTTPS
-        if (JwtAuth::isHttps()) {
+        $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+        $isLocal = str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
+        $isProd = defined('ENVIRONMENT') ? ENVIRONMENT === 'production' : (env('CI_ENVIRONMENT') === 'production');
+
+        // 6. Strict Transport Security (HSTS) HANYA untuk production dan non-localhost
+        if ($isProd && !$isLocal && JwtAuth::isHttps()) {
             $response->setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         }
 
         // 7. Balanced Content Security Policy (CSP)
         // Mendukung Chart.js, Font Awesome 6, Cyber Canvas 3D, Vanilla Tilt, CropperJS,
-        // Google Fonts, Unpkg Boxicons, Swiper, dan domain produksi klinikbunanur.my.id
+        // Google Fonts, Unpkg Boxicons, Swiper, domain produksi klinikbunanur.my.id dan InfinityFree
         $cspDirectives = [
-            "default-src 'self' https://klinikbunanur.my.id https://www.klinikbunanur.my.id",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
-            "style-src 'self' 'unsafe-inline' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-            "font-src 'self' data: https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://fonts.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-            "img-src 'self' data: blob: https://klinikbunanur.my.id https://www.klinikbunanur.my.id https:",
-            "media-src 'self' blob: https://klinikbunanur.my.id https://www.klinikbunanur.my.id https:",
-            "connect-src 'self' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://api.fonnte.com",
+            "default-src 'self' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://*.infinityfreeapp.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://*.infinityfreeapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
+            "style-src 'self' 'unsafe-inline' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://*.infinityfreeapp.com https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+            "font-src 'self' data: https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://*.infinityfreeapp.com https://fonts.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+            "img-src 'self' data: blob: https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://*.infinityfreeapp.com https:",
+            "media-src 'self' blob: https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://*.infinityfreeapp.com https:",
+            "connect-src 'self' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://*.infinityfreeapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://api.fonnte.com",
             "frame-ancestors 'self'",
             "base-uri 'self'",
-            "form-action 'self' https://klinikbunanur.my.id https://www.klinikbunanur.my.id",
-            "upgrade-insecure-requests"
+            "form-action 'self' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://*.infinityfreeapp.com"
         ];
+
+        // Directive upgrade-insecure-requests HANYA pada production HTTPS non-localhost
+        if ($isProd && !$isLocal) {
+            $cspDirectives[] = "upgrade-insecure-requests";
+        }
 
         $response->setHeader('Content-Security-Policy', implode('; ', $cspDirectives));
 
