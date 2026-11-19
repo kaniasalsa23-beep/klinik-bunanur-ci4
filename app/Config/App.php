@@ -230,7 +230,8 @@ class App extends BaseConfig
                 (isset($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) === 'on') ||
                 (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false) ||
                 (isset($_SERVER['HTTP_X_FORWARDED_PORT']) && (int)$_SERVER['HTTP_X_FORWARDED_PORT'] === 443) ||
-                in_array($host, ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true)
+                in_array($host, ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true) ||
+                str_contains($host, 'infinityfreeapp.com')
             ) {
                 $_SERVER['HTTPS']       = 'on';
                 $_SERVER['SERVER_PORT'] = 443;

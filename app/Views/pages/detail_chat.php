@@ -193,7 +193,7 @@ color:#555;
 <!-- ================= HEADER ================= -->
 <div class="chat-header">
 
-<a href="konsultasi_bidan.php" class="back-btn">
+<a href="<?= base_url('konsultasi_bidan') ?>" class="back-btn">
     ←
 </a>
 
@@ -285,7 +285,7 @@ if(chatBody){
 </script>
 <script>
 setInterval(function(){
-    fetch('update_last_seen.php');
+    fetch('<?= site_url('bidan/updateLastSeen') ?>');
 }, 5000);
 </script>
 </body>

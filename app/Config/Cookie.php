@@ -104,4 +104,27 @@ class Cookie extends BaseConfig
      * @see https://tools.ietf.org/html/rfc2616#section-2.2
      */
     public bool $raw = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+        $isLocal = str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
+
+        $isHttps = (
+            (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ||
+            ((int)($_SERVER['SERVER_PORT'] ?? 80) === 443) ||
+            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
+            (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') ||
+            (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false) ||
+            in_array($host, ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true) ||
+            str_contains($host, 'infinityfreeapp.com')
+        );
+
+        // Auto-adapt secure flag: true on production HTTPS, false on local HTTP
+        if ($isHttps && !$isLocal) {
+            $this->secure = true;
+        }
+    }
 }

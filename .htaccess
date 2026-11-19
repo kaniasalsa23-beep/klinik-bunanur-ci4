@@ -70,4 +70,6 @@ Options -Indexes
 
 # Security: Hide server info
 ServerSignature Off
-Header unset X-Powered-By
+<IfModule mod_headers.c>
+    Header unset X-Powered-By
+</IfModule>

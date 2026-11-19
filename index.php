@@ -47,8 +47,18 @@ if (!$isLocal) {
         $_SERVER['SERVER_PORT'] = 443;
     }
 
-    // Method 5: Domain lock — domain produksi ini SELALU HTTPS
-    if (in_array($host, ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true)) {
+    // Method 5: Forwarded scheme header
+    if (isset($_SERVER['HTTP_X_FORWARDED_SCHEME']) &&
+        strtolower($_SERVER['HTTP_X_FORWARDED_SCHEME']) === 'https') {
+        $_SERVER['HTTPS']       = 'on';
+        $_SERVER['SERVER_PORT'] = 443;
+    }
+
+    // Method 6: Hardcoded domain lock — domain produksi cPanel & InfinityFree SELALU HTTPS
+    if (
+        in_array($host, ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true) ||
+        str_contains($host, 'infinityfreeapp.com')
+    ) {
         $_SERVER['HTTPS']       = 'on';
         $_SERVER['SERVER_PORT'] = 443;
     }

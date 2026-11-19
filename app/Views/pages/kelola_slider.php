@@ -6,7 +6,8 @@ $query = mysqli_query($conn, "SELECT * FROM tentang_slider ORDER BY id DESC");
 <div class="container mt-4">
     <h3>Kelola Slider Beranda</h3>
     <!-- Form Tambah -->
-    <form action="proses/tambah_slider.php" method="POST" enctype="multipart/form-data" class="mb-4">
+    <form action="<?= base_url('tambah_galeri') ?>" method="POST" enctype="multipart/form-data" class="mb-4">
+        <?= csrf_field() ?>
         <div class="input-group">
             <input type="file" name="foto" class="form-control" required>
             <button class="btn btn-primary" type="submit" name="simpan">Upload Gambar</button>
@@ -29,7 +30,7 @@ $query = mysqli_query($conn, "SELECT * FROM tentang_slider ORDER BY id DESC");
                 <td><?= $no++; ?></td>
                 <td><img src="<?= base_url('assets/slider/' . htmlspecialchars($row['foto'], ENT_QUOTES, 'UTF-8')) ?>" width="100" style="border-radius:6px;"></td>
                 <td>
-                    <a href="proses/hapus_slider.php?id=<?= $row['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Hapus gambar ini?')">Hapus</a>
+                    <a href="<?= base_url('hapus_galeri/' . $row['id']) ?>" class="btn btn-danger btn-sm" onclick="return confirm('Hapus gambar ini?')">Hapus</a>
                 </td>
             </tr>
             <?php endwhile; ?>
