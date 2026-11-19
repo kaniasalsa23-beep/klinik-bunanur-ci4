@@ -197,7 +197,7 @@ color:#555;
     ←
 </a>
 
-<img src="../assets/profile/<?= !empty($pasien['foto']) ? esc($pasien['foto'], 'attr') : 'default.png' ?>">
+<img src="<?= base_url('assets/profile/' . (!empty($pasien['foto']) ? esc($pasien['foto'], 'attr') : 'default.png')) ?>">
 
 <div>
 <b><?= esc($pasien['nama'] ?? '') ?></b><br>

@@ -16,7 +16,7 @@ class App extends BaseConfig
      *
      * E.g., http://example.com/
      */
-    public string $baseURL = 'http://localhost:8080/';
+    public string $baseURL = 'https://klinikbunanur.my.id/';
 
     /**
      * Allowed Hostnames in the Site URL other than the hostname in the baseURL.
@@ -25,6 +25,8 @@ class App extends BaseConfig
      * @var list<string>
      */
     public array $allowedHostnames = [
+        'klinikbunanur.my.id',
+        'www.klinikbunanur.my.id',
         'klinikbunanur.infinityfreeapp.com',
         'localhost',
         '127.0.0.1',
@@ -132,7 +134,7 @@ class App extends BaseConfig
      * @see https://www.php.net/manual/en/timezones.php for list of timezones
      *      supported by PHP.
      */
-    public string $appTimezone = 'UTC';
+    public string $appTimezone = 'Asia/Jakarta';
 
     /**
      * --------------------------------------------------------------------------
@@ -156,7 +158,7 @@ class App extends BaseConfig
      * secure, the user will be redirected to a secure version of the page
      * and the HTTP Strict Transport Security (HSTS) header will be set.
      */
-    public bool $forceGlobalSecureRequests = false;
+    public bool $forceGlobalSecureRequests = true;
 
     /**
      * --------------------------------------------------------------------------
@@ -213,35 +215,58 @@ class App extends BaseConfig
 
         $this->fonnteToken = (string)env('FONNTE_TOKEN', (string)env('WHATSAPP_GATEWAY_TOKEN', (string)env('WHATSAPP_API_TOKEN', '')));
 
-        // Dynamic base URL detection for Vercel, InfinityFree production, & XAMPP local
+        // 1. CPANEL SSL PROXY: Deteksi dan normalisasi HTTPS sedini mungkin
+        if (
+            (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ||
+            ((int)($_SERVER['SERVER_PORT'] ?? 80) === 443) ||
+            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
+            (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') ||
+            (isset($_SERVER['HTTP_X_FORWARDED_SCHEME']) && strtolower($_SERVER['HTTP_X_FORWARDED_SCHEME']) === 'https') ||
+            (isset($_SERVER['HTTP_X_URL_SCHEME']) && strtolower($_SERVER['HTTP_X_URL_SCHEME']) === 'https') ||
+            (isset($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) === 'on') ||
+            (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false) ||
+            (isset($_SERVER['HTTP_X_FORWARDED_PORT']) && (int)$_SERVER['HTTP_X_FORWARDED_PORT'] === 443) ||
+            (isset($_SERVER['HTTP_HOST']) && in_array($_SERVER['HTTP_HOST'], ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true))
+        ) {
+            $_SERVER['HTTPS']       = 'on';
+            $_SERVER['SERVER_PORT'] = 443;
+        }
+
+        // 2. SELALU bersihkan indexPage agar route bersih tanpa /index.php/
+        $this->indexPage = '';
+
+        // 3. Resolusi Base URL yang kebal cPanel reverse proxy & Vercel
         $envBase = env('app.baseURL')
             ?: (getenv('app_baseURL')
             ?: (getenv('APP_BASEURL')
             ?: ($_SERVER['app_baseURL'] ?? ($_ENV['app_baseURL'] ?? null))));
 
         if ($envBase) {
-            $this->baseURL = rtrim($envBase, '/') . '/';
-        } elseif (isset($_SERVER['HTTP_HOST']) || isset($_SERVER['VERCEL_URL']) || isset($_ENV['VERCEL_URL'])) {
-            $isVercel = (getenv('VERCEL') || isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL_URL']));
-
-            $isHttps = $isVercel || (
-                (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
-                (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443) ||
-                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
-                (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') ||
-                (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false)
+            $this->baseURL = rtrim(trim((string)$envBase, "'\""), '/') . '/';
+        } elseif (isset($_SERVER['HTTP_HOST']) && in_array($_SERVER['HTTP_HOST'], ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true)) {
+            // Domain produksi cPanel SELALU HTTPS
+            $this->baseURL = 'https://' . $_SERVER['HTTP_HOST'] . '/';
+        } elseif (isset($_SERVER['VERCEL_URL']) || isset($_ENV['VERCEL_URL'])) {
+            $host = $_SERVER['VERCEL_URL'] ?? $_ENV['VERCEL_URL'];
+            $this->baseURL = 'https://' . $host . '/';
+        } elseif (isset($_SERVER['HTTP_HOST'])) {
+            $isHttps = (
+                (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ||
+                ((int)($_SERVER['SERVER_PORT'] ?? 80) === 443)
             );
             $protocol = $isHttps ? 'https://' : 'http://';
-            $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['VERCEL_URL'] ?? ($_ENV['VERCEL_URL'] ?? 'localhost'));
-
-            $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
-            $dir = trim(dirname($scriptName), '/');
-            $sub = ($dir !== '' && $dir !== '.') ? '/' . $dir . '/' : '/';
-
-            $this->baseURL = $protocol . $host . $sub;
+            $this->baseURL = $protocol . $_SERVER['HTTP_HOST'] . '/';
         }
 
-        // Izinkan hostname runtime secara dinamis (misal domain Vercel *.vercel.app)
+        // 4. Kunci HTTPS jika domain produksi
+        if (isset($_SERVER['HTTP_HOST']) && in_array($_SERVER['HTTP_HOST'], ['klinikbunanur.my.id', 'www.klinikbunanur.my.id'], true)) {
+            $this->forceGlobalSecureRequests = true;
+            if (strpos($this->baseURL, 'http://') === 0) {
+                $this->baseURL = 'https://' . substr($this->baseURL, 7);
+            }
+        }
+
+        // 5. Izinkan hostname runtime secara dinamis
         if (!empty($_SERVER['HTTP_HOST']) && !in_array($_SERVER['HTTP_HOST'], $this->allowedHostnames, true)) {
             $this->allowedHostnames[] = $_SERVER['HTTP_HOST'];
         }

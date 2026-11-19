@@ -97,10 +97,11 @@ class Paths
      */
     public function __construct()
     {
+        // Deteksi serverless HANYA jika variabel eksplisit VERCEL/Lambda ada.
+        // Hindari false-positive di Linux cPanel (yang juga punya /tmp).
         $isServerless = (
             getenv('VERCEL') || isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL']) ||
-            getenv('AWS_LAMBDA_FUNCTION_NAME') || isset($_SERVER['LAMBDA_TASK_ROOT']) ||
-            (DIRECTORY_SEPARATOR === '/' && is_dir('/tmp'))
+            getenv('AWS_LAMBDA_FUNCTION_NAME') || isset($_SERVER['LAMBDA_TASK_ROOT'])
         );
 
         if ($isServerless) {

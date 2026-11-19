@@ -234,9 +234,9 @@ margin-bottom:15px;
 <div class="detail-card">
 
 <img 
-src="../assets/layanan/<?= !empty($layanan['gambar']) ? $layanan['gambar'] : 'default.png' ?>" 
+src="<?= base_url('assets/layanan/' . (!empty($layanan['gambar']) ? $layanan['gambar'] : 'default.png')) ?>" 
 class="detail-img"
-onerror="this.src='../assets/layanan/default.png'"
+onerror="this.src='<?= base_url('assets/layanan/default.png') ?>'"
 >
 
 <div class="detail-body">
@@ -291,7 +291,7 @@ onerror="this.src='../assets/layanan/default.png'"
 <div class="testi-box">
 
 <div class="testi-user">
-<img src="../assets/profile/<?= esc($t['foto_pasien'] ?: 'default.png', 'attr') ?>">
+<img src="<?= base_url('assets/profile/' . esc($t['foto_pasien'] ?: 'default.png', 'attr')) ?>">
 <strong><?= esc($t['nama']) ?></strong>
 </div>
 
@@ -305,7 +305,7 @@ onerror="this.src='../assets/layanan/default.png'"
 
 <?php if(!empty($t['foto'])): ?>
 <img 
-src="../assets/testimoni/<?= esc($t['foto'], 'attr') ?>" 
+src="<?= base_url('assets/testimoni/' . esc($t['foto'], 'attr')) ?>" 
 class="foto-testi"
 onclick="window.open(this.src)">
 <?php endif; ?>

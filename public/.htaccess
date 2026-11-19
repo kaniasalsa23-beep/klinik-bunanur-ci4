@@ -5,16 +5,18 @@ Options -Indexes
 # Rewrite engine
 # ----------------------------------------------------------------------
 
-# Turning on the rewrite engine is necessary for the following rules and features.
-# FollowSymLinks must be enabled for this to work.
 <IfModule mod_rewrite.c>
 	Options +FollowSymlinks
 	RewriteEngine On
 
-	# If you installed CodeIgniter in a subfolder, you will need to
-	# change the following line to match the subfolder you need.
-	# http://httpd.apache.org/docs/current/mod/mod_rewrite.html#rewritebase
-	# RewriteBase /
+	# ==================================================================
+	# FORCE HTTPS — compatible behind cPanel SSL/reverse proxy
+	# ==================================================================
+	RewriteCond %{HTTPS} !=on
+	RewriteCond %{HTTP:X-Forwarded-Proto} !https
+	RewriteCond %{HTTP_HOST} !^localhost [NC]
+	RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
+	RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
 	# Redirect Trailing Slashes...
 	RewriteCond %{REQUEST_FILENAME} !-d
@@ -38,11 +40,28 @@ Options -Indexes
 </IfModule>
 
 <IfModule !mod_rewrite.c>
-	# If we don't have mod_rewrite installed, all 404's
-	# can be sent to index.php, and everything works as normal.
 	ErrorDocument 404 index.php
 </IfModule>
 
-# Disable server signature start
+# ==================================================================
+# PERFORMANCE: Browser Caching for static assets
+# ==================================================================
+<IfModule mod_expires.c>
+	ExpiresActive On
+	ExpiresByType image/jpeg "access plus 1 month"
+	ExpiresByType image/png "access plus 1 month"
+	ExpiresByType image/webp "access plus 1 month"
+	ExpiresByType image/svg+xml "access plus 1 month"
+	ExpiresByType image/x-icon "access plus 1 year"
+	ExpiresByType text/css "access plus 1 month"
+	ExpiresByType application/javascript "access plus 1 month"
+	ExpiresByType font/woff2 "access plus 1 year"
+	ExpiresByType font/woff "access plus 1 year"
+	ExpiresByType video/mp4 "access plus 1 month"
+</IfModule>
+
+# ==================================================================
+# SECURITY: Disable server signature
+# ==================================================================
 ServerSignature Off
-# Disable server signature end
+Header unset X-Powered-By

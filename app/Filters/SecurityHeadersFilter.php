@@ -33,8 +33,8 @@ class SecurityHeadersFilter implements FilterInterface
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-        // 1. Anti-Clickjacking
-        $response->setHeader('X-Frame-Options', 'DENY');
+        // 1. Anti-Clickjacking (SAMEORIGIN agar embed internal milik klinik tetap bekerja)
+        $response->setHeader('X-Frame-Options', 'SAMEORIGIN');
 
         // 2. MIME Sniffing Defense
         $response->setHeader('X-Content-Type-Options', 'nosniff');
@@ -54,18 +54,20 @@ class SecurityHeadersFilter implements FilterInterface
         }
 
         // 7. Balanced Content Security Policy (CSP)
-        // Mendukung Chart.js, Font Awesome 6, Cyber Canvas 3D, Vanilla Tilt, CropperJS, Google Fonts, dan Unpkg Boxicons
+        // Mendukung Chart.js, Font Awesome 6, Cyber Canvas 3D, Vanilla Tilt, CropperJS,
+        // Google Fonts, Unpkg Boxicons, Swiper, dan domain produksi klinikbunanur.my.id
         $cspDirectives = [
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-            "font-src 'self' https://fonts.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data:",
-            "img-src 'self' data: blob: https:",
-            "media-src 'self' data: blob:",
-            "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-            "frame-ancestors 'none'",
+            "default-src 'self' https://klinikbunanur.my.id https://www.klinikbunanur.my.id",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com",
+            "style-src 'self' 'unsafe-inline' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+            "font-src 'self' data: https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://fonts.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+            "img-src 'self' data: blob: https://klinikbunanur.my.id https://www.klinikbunanur.my.id https:",
+            "media-src 'self' blob: https://klinikbunanur.my.id https://www.klinikbunanur.my.id https:",
+            "connect-src 'self' https://klinikbunanur.my.id https://www.klinikbunanur.my.id https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://api.fonnte.com",
+            "frame-ancestors 'self'",
             "base-uri 'self'",
-            "form-action 'self'"
+            "form-action 'self' https://klinikbunanur.my.id https://www.klinikbunanur.my.id",
+            "upgrade-insecure-requests"
         ];
 
         $response->setHeader('Content-Security-Policy', implode('; ', $cspDirectives));

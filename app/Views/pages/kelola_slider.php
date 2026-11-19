@@ -27,7 +27,7 @@ $query = mysqli_query($conn, "SELECT * FROM tentang_slider ORDER BY id DESC");
             <?php $no=1; while($row = mysqli_fetch_assoc($query)): ?>
             <tr>
                 <td><?= $no++; ?></td>
-                <td><img src="assets/slider/<?= $row['foto']; ?>" width="100"></td>
+                <td><img src="<?= base_url('assets/slider/' . htmlspecialchars($row['foto'], ENT_QUOTES, 'UTF-8')) ?>" width="100" style="border-radius:6px;"></td>
                 <td>
                     <a href="proses/hapus_slider.php?id=<?= $row['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Hapus gambar ini?')">Hapus</a>
                 </td>

@@ -1,33 +1,73 @@
-# ----------------------------------------------------------------------
-# Klinik Bunanur - CodeIgniter 4 Root Apache Configuration
-# Shared Hosting (InfinityFree / cPanel) & Local Apache Compatible
-# ----------------------------------------------------------------------
+# ======================================================================
+# Klinik Bunanur CI4 - Root .htaccess (cPanel public_html)
+# DEPLOYMENT: Seluruh proyek CI4 di dalam public_html/
+# Web root cPanel menunjuk ke:  public_html/public/
+# ======================================================================
 
-# Disable Directory Browsing
+# Disable directory browsing
 Options -Indexes
 
 <IfModule mod_rewrite.c>
     Options +FollowSymlinks
     RewriteEngine On
 
-    # Block direct browser access to sensitive files and folders
-    RewriteRule ^(\.env|\.git|app|system|writable|tests|composer\.(json|lock)|phpunit\.xml) - [F,L,NC]
+    # ============================================================
+    # FORCE HTTPS — proxy-aware, anti-redirect-loop
+    # CPanel SSL terminates di load balancer; header X-Forwarded-Proto
+    # harus diperiksa agar tidak terjadi loop redirect tanpa akhir.
+    # ============================================================
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteCond %{HTTP_HOST} !^localhost [NC]
+    RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
-    # If the request is already for public folder, let it pass
-    RewriteCond %{REQUEST_URI} ^/public/ [NC]
+    # ============================================================
+    # Block direct access to sensitive project files & folders
+    # (app/, system/, writable/, .env, vendor/, dll.)
+    # ============================================================
+    RewriteRule ^(\.env|\.git|app|system|writable|tests|vendor|composer\.(json|lock)|phpunit\.xml|spark|builds|preload\.php)(/|$) - [F,L,NC]
+
+    # ============================================================
+    # KRITIS: Izinkan file & folder yang SUDAH ADA secara fisik
+    # di dalam public_html/ agar tidak di-rewrite ke public/$1.
+    # Ini mencegah CSS/JS/gambar yang ada di public/assets/
+    # dilewatkan dua kali dan menyebabkan URL ganda /public/assets/.
+    # ============================================================
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Rewrite all root and non-public requests into the public/ directory
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ public/$1 [L]
+    # ============================================================
+    # Teruskan semua request lain ke public/ (front controller CI4)
+    # ============================================================
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
 
-    RewriteRule ^$ public/ [L]
 </IfModule>
 
-# Fallback error handling
+# Fallback jika mod_rewrite tidak aktif
 <IfModule !mod_rewrite.c>
     ErrorDocument 404 public/index.php
 </IfModule>
 
+# ==================================================================
+# PERFORMANCE: Browser Caching untuk aset statis
+# ==================================================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg      "access plus 1 month"
+    ExpiresByType image/png       "access plus 1 month"
+    ExpiresByType image/webp      "access plus 1 month"
+    ExpiresByType image/gif       "access plus 1 month"
+    ExpiresByType image/svg+xml   "access plus 1 month"
+    ExpiresByType image/x-icon    "access plus 1 year"
+    ExpiresByType text/css        "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType font/woff2      "access plus 1 year"
+    ExpiresByType font/woff       "access plus 1 year"
+    ExpiresByType video/mp4       "access plus 1 month"
+</IfModule>
+
+# Security: Hide server info
 ServerSignature Off
+Header unset X-Powered-By
