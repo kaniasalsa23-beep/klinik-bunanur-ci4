@@ -232,6 +232,7 @@
             font-weight: 600;
         }
     </style>
+    <link rel="stylesheet" href="<?= base_url('assets/css/responsive-mobile.css') ?>">
 </head>
 <body>
 

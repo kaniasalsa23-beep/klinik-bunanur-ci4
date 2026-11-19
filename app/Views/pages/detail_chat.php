@@ -186,6 +186,7 @@ margin-right:10px;
 color:#555;
 }
 </style>
+    <link rel="stylesheet" href="<?= base_url('assets/css/responsive-mobile.css') ?>">
 </head>
 
 <body>
@@ -288,5 +289,40 @@ setInterval(function(){
     fetch('<?= site_url('bidan/updateLastSeen') ?>');
 }, 5000);
 </script>
+
+    <!-- Mobile Sidebar Toggle -->
+    <script>
+    (function(){
+        var toggle = document.querySelector('.sidebar-mobile-toggle');
+        var sidebar = document.querySelector('.sidebar, .sidebar-container');
+        var backdrop = document.querySelector('.sidebar-backdrop');
+        if (!toggle) {
+            toggle = document.createElement('button');
+            toggle.className = 'sidebar-mobile-toggle';
+            toggle.innerHTML = '<i class="bx bx-menu"></i>';
+            document.body.appendChild(toggle);
+        }
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'sidebar-backdrop';
+            document.body.appendChild(backdrop);
+        }
+        function openSidebar(){
+            if(sidebar) sidebar.classList.add('mobile-open');
+            backdrop.classList.add('active');
+            toggle.innerHTML = '<i class="bx bx-x"></i>';
+        }
+        function closeSidebar(){
+            if(sidebar) sidebar.classList.remove('mobile-open');
+            backdrop.classList.remove('active');
+            toggle.innerHTML = '<i class="bx bx-menu"></i>';
+        }
+        toggle.addEventListener('click', function(){
+            if(sidebar && sidebar.classList.contains('mobile-open')) closeSidebar();
+            else openSidebar();
+        });
+        backdrop.addEventListener('click', closeSidebar);
+    })();
+    </script>
 </body>
 </html>

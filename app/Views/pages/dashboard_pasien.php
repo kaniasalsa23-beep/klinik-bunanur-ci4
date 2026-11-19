@@ -393,7 +393,53 @@ if (!isset($bidan) || empty($bidan)) {
                 gap: 12px;
             }
         }
+
+        @media(max-width: 768px) {
+            .main-dashboard {
+                margin-left: 68px !important;
+                width: calc(100% - 68px) !important;
+                padding: 16px 14px !important;
+            }
+            .welcome-box-3d {
+                padding: 20px 16px !important;
+                border-radius: 20px !important;
+                margin-bottom: 20px !important;
+            }
+            .welcome-box-3d h3 {
+                font-size: clamp(1rem, 4vw, 1.3rem) !important;
+            }
+            .welcome-box-3d p { font-size: 13px !important; }
+            .grid-cyber {
+                grid-template-columns: 1fr !important;
+                gap: 14px !important;
+                margin-bottom: 20px !important;
+            }
+            .card-cyber-3d {
+                padding: 20px 16px !important;
+                border-radius: 20px !important;
+            }
+            .card-cyber-3d h3 { font-size: clamp(0.95rem, 3.5vw, 1.1rem) !important; }
+            .card-cyber-3d p  { font-size: 13px !important; margin-bottom: 16px !important; }
+            .card-icon-cyber { width: 44px !important; height: 44px !important; font-size: 20px !important; border-radius: 13px !important; margin-bottom: 14px !important; }
+            .table-panel-cyber { padding: 16px 12px !important; border-radius: 20px !important; }
+            .table-panel-cyber h3 { font-size: clamp(0.95rem, 3.5vw, 1.1rem) !important; margin-bottom: 14px !important; }
+            .table-wrapper-cyber { overflow-x: auto !important; }
+            .topbar-cyber h2 { font-size: clamp(1.1rem, 4.5vw, 1.4rem) !important; }
+            .status-bidan-card { padding: 6px 12px !important; font-size: 12px !important; }
+        }
+
+        @media(max-width: 480px) {
+            .main-dashboard {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding: 60px 12px 20px !important;
+            }
+            .card-cyber-3d { padding: 16px 12px !important; border-radius: 16px !important; }
+            .table-panel-cyber { padding: 12px 8px !important; border-radius: 16px !important; }
+            .welcome-box-3d { padding: 16px 12px !important; border-radius: 16px !important; }
+        }
     </style>
+    <link rel="stylesheet" href="<?= base_url('assets/css/responsive-mobile.css') ?>">
 </head>
 <body>
 
@@ -529,5 +575,41 @@ if (!isset($bidan) || empty($bidan)) {
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
     <script src="<?= base_url('assets/js/cyber-canvas-3d.js') ?>"></script>
+
+    <!-- Mobile Sidebar Toggle -->
+    <script>
+    (function(){
+        var toggle = document.querySelector('.sidebar-mobile-toggle');
+        var sidebar = document.querySelector('.sidebar');
+        var backdrop = document.querySelector('.sidebar-backdrop');
+        if (!toggle) {
+            // create toggle button if not exists
+            toggle = document.createElement('button');
+            toggle.className = 'sidebar-mobile-toggle';
+            toggle.innerHTML = '<i class="bx bx-menu"></i>';
+            document.body.appendChild(toggle);
+        }
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'sidebar-backdrop';
+            document.body.appendChild(backdrop);
+        }
+        function openSidebar(){
+            if(sidebar) sidebar.classList.add('mobile-open');
+            backdrop.classList.add('active');
+            toggle.innerHTML = '<i class="bx bx-x"></i>';
+        }
+        function closeSidebar(){
+            if(sidebar) sidebar.classList.remove('mobile-open');
+            backdrop.classList.remove('active');
+            toggle.innerHTML = '<i class="bx bx-menu"></i>';
+        }
+        toggle.addEventListener('click', function(){
+            if(sidebar && sidebar.classList.contains('mobile-open')) closeSidebar();
+            else openSidebar();
+        });
+        backdrop.addEventListener('click', closeSidebar);
+    })();
+    </script>
 </body>
 </html>

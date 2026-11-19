@@ -337,10 +337,51 @@ $online = session()->has('bidan');
             .header-box { flex-direction: column; align-items: flex-start; gap: 12px; }
         }
 
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 68px !important;
+                width: calc(100% - 68px) !important;
+                padding: 16px 14px !important;
+            }
+            .header-box {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+                margin-bottom: 20px !important;
+                padding-bottom: 14px !important;
+            }
+            .header-box h1 { font-size: clamp(1.1rem, 4.5vw, 1.4rem) !important; }
+            .header-box p { font-size: 12.5px !important; }
+            .security-badge-top { font-size: 11px !important; padding: 6px 12px !important; }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 12px !important;
+                margin-bottom: 20px !important;
+            }
+            .stat-card-3d { padding: 18px 14px !important; border-radius: 18px !important; }
+            .stat-info h3 { font-size: clamp(1.4rem, 5vw, 2rem) !important; }
+            .stat-info p  { font-size: 11.5px !important; }
+            .stat-icon-wrapper { width: 44px !important; height: 44px !important; font-size: 20px !important; }
+            .table-responsive-cyber { overflow-x: auto !important; }
+            .glass-panel-section { padding: 18px 12px !important; border-radius: 20px !important; }
+            .card-title-bar { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; font-size: 13px !important; }
+        }
+
         @media (max-width: 600px) {
-            .stats-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr !important; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding: 60px 12px 20px !important;
+            }
+            .stat-card-3d { padding: 14px 12px !important; border-radius: 16px !important; }
+            .stats-grid { gap: 10px !important; }
         }
     </style>
+    <link rel="stylesheet" href="<?= base_url('assets/css/responsive-mobile.css') ?>">
 </head>
 
 <body>
@@ -618,6 +659,41 @@ $online = session()->has('bidan');
             }
         });
     });
+    </script>
+
+    <!-- Mobile Sidebar Toggle -->
+    <script>
+    (function(){
+        var toggle = document.querySelector('.sidebar-mobile-toggle');
+        var sidebar = document.querySelector('.sidebar, .sidebar-container');
+        var backdrop = document.querySelector('.sidebar-backdrop');
+        if (!toggle) {
+            toggle = document.createElement('button');
+            toggle.className = 'sidebar-mobile-toggle';
+            toggle.innerHTML = '<i class="bx bx-menu"></i>';
+            document.body.appendChild(toggle);
+        }
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'sidebar-backdrop';
+            document.body.appendChild(backdrop);
+        }
+        function openSidebar(){
+            if(sidebar) sidebar.classList.add('mobile-open');
+            backdrop.classList.add('active');
+            toggle.innerHTML = '<i class="bx bx-x"></i>';
+        }
+        function closeSidebar(){
+            if(sidebar) sidebar.classList.remove('mobile-open');
+            backdrop.classList.remove('active');
+            toggle.innerHTML = '<i class="bx bx-menu"></i>';
+        }
+        toggle.addEventListener('click', function(){
+            if(sidebar && sidebar.classList.contains('mobile-open')) closeSidebar();
+            else openSidebar();
+        });
+        backdrop.addEventListener('click', closeSidebar);
+    })();
     </script>
 </body>
 </html>

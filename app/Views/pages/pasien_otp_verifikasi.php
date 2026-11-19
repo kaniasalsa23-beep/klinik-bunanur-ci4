@@ -233,7 +233,19 @@
         .auth-footer-links a:hover {
             text-decoration: underline;
         }
+    
+        @media(max-width: 768px) {
+            .auth-wrapper { padding: 20px 14px !important; }
+            .auth-card { padding: 24px 16px !important; width: 95% !important; border-radius: 22px !important; }
+            .otp-input { width: 46px !important; height: 54px !important; font-size: 20px !important; }
+            .otp-wrapper { gap: 8px !important; }
+        }
+        @media(max-width: 480px) {
+            .otp-input { width: 38px !important; height: 46px !important; font-size: 17px !important; }
+            .otp-wrapper { gap: 6px !important; }
+        }
     </style>
+    <link rel="stylesheet" href="<?= base_url('assets/css/responsive-mobile.css') ?>">
 </head>
 <body>
 

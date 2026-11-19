@@ -246,14 +246,35 @@
         @media(max-width: 992px) {
             .main { margin-left: 85px !important; width: calc(100% - 85px) !important; padding: 24px 20px !important; padding-top: 24px !important; }
         }
+        @media(max-width: 768px) {
+            .main { margin-left: 68px !important; width: calc(100% - 68px) !important; padding: 16px 14px !important; }
+            .welcome-box-riwayat { padding: 20px 16px !important; border-radius: 20px !important; margin-bottom: 20px !important; }
+            .welcome-box-riwayat h3 { font-size: clamp(1rem, 4vw, 1.3rem) !important; }
+            .welcome-box-riwayat p { font-size: 13px !important; }
+            .summary-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; margin-bottom: 20px !important; }
+            .info-card-riwayat { padding: 18px 14px !important; border-radius: 18px !important; }
+            .info-card-riwayat h3 { font-size: clamp(1.4rem, 5vw, 2rem) !important; }
+            .info-card-riwayat i { font-size: 24px !important; }
+            .modal-card { padding: 24px 18px !important; border-radius: 22px !important; }
+            .modal-header h2 { font-size: clamp(1rem, 4vw, 1.3rem) !important; }
+            .stars label { font-size: 28px !important; }
+            .alert-success-floating { right: 10px !important; min-width: 260px !important; max-width: 95vw !important; }
+        }
         @media(max-width: 576px) {
-            .main { margin-left: 0 !important; width: 100% !important; padding: 20px 14px !important; padding-top: 20px !important; }
+            .main { margin-left: 0 !important; width: 100% !important; padding: 60px 12px 20px !important; }
+        }
+        @media(max-width: 480px) {
+            .summary-grid { grid-template-columns: 1fr !important; }
+            .info-card-riwayat h3 { font-size: clamp(1.3rem, 6vw, 1.8rem) !important; }
+            .modal-card { padding: 18px 14px !important; border-radius: 18px !important; }
+            .stars label { font-size: 24px !important; }
         }
 
         @media(max-width: 900px) {
             .summary-grid { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="<?= base_url('assets/css/responsive-mobile.css') ?>">
 </head>
 <body>
 
@@ -462,6 +483,41 @@
             setTimeout(() => alert.remove(), 800);
         }
     }, 6000);
+    </script>
+
+    <!-- Mobile Sidebar Toggle -->
+    <script>
+    (function(){
+        var toggle = document.querySelector('.sidebar-mobile-toggle');
+        var sidebar = document.querySelector('.sidebar, .sidebar-container');
+        var backdrop = document.querySelector('.sidebar-backdrop');
+        if (!toggle) {
+            toggle = document.createElement('button');
+            toggle.className = 'sidebar-mobile-toggle';
+            toggle.innerHTML = '<i class="bx bx-menu"></i>';
+            document.body.appendChild(toggle);
+        }
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'sidebar-backdrop';
+            document.body.appendChild(backdrop);
+        }
+        function openSidebar(){
+            if(sidebar) sidebar.classList.add('mobile-open');
+            backdrop.classList.add('active');
+            toggle.innerHTML = '<i class="bx bx-x"></i>';
+        }
+        function closeSidebar(){
+            if(sidebar) sidebar.classList.remove('mobile-open');
+            backdrop.classList.remove('active');
+            toggle.innerHTML = '<i class="bx bx-menu"></i>';
+        }
+        toggle.addEventListener('click', function(){
+            if(sidebar && sidebar.classList.contains('mobile-open')) closeSidebar();
+            else openSidebar();
+        });
+        backdrop.addEventListener('click', closeSidebar);
+    })();
     </script>
 </body>
 </html>
