@@ -41,5 +41,16 @@ abstract class BaseController extends Controller
 
         // Preload any models, libraries, etc, here.
         // $this->session = service('session');
+
+        // Pastikan timezone PHP selalu sinkron dengan Asia/Jakarta (WIB = UTC+7)
+        date_default_timezone_set('Asia/Jakarta');
+
+        // Sinkronisasi timezone MySQL Session ke UTC+7 (Asia/Jakarta)
+        try {
+            $db = \Config\Database::connect();
+            $db->query("SET time_zone = '+07:00'");
+        } catch (\Throwable $e) {
+            // Abaikan jika koneksi database belum siap
+        }
     }
 }

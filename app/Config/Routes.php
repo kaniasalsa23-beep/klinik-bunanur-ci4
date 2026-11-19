@@ -70,6 +70,8 @@ $routes->post('reset-sandi', 'Home::prosesResetSandiPasien');
 $routes->group('', ['filter' => 'pasienAuth'], static function ($routes) {
     $routes->get('dashboard_pasien', 'Home::dashboardPasien');
     $routes->get('pasien/dashboard', 'Home::dashboardPasien');
+    $routes->get('pasien/updateLastSeen', 'Home::updateLastSeenPasien');
+    $routes->get('updateLastSeenPasien', 'Home::updateLastSeenPasien');
 
     // Konsultasi Pasien
     $routes->get('konsultasi', 'Home::konsultasi');

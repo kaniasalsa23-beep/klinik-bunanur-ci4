@@ -12,11 +12,13 @@ $pasien = $session->get('pasien');
 $id = $pasien['id'];
 $id_pasien = $pasien['id'];
 
-// Update last_seen pasien
-$db->query(
-    "UPDATE pasien SET last_seen = NOW() WHERE id = ?",
-    [$id_pasien]
-);
+// Update last_seen dan status pasien menggunakan waktu PHP Asia/Jakarta
+$now = date('Y-m-d H:i:s');
+$dashUpdate = ['last_seen' => $now];
+if ($db->fieldExists('status', 'pasien')) {
+    $dashUpdate['status'] = 'online';
+}
+$db->table('pasien')->where('id', $id_pasien)->update($dashUpdate);
 
 // Ambil riwayat kunjungan
 $riwayat = $db->query(

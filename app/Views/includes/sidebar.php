@@ -37,13 +37,17 @@ if (
     $foto = $defaultFoto;
 }
 
-$online_pasien = false;
+// Status online pasien: Karena user memiliki sesi aktif pasien di sidebar miliknya sendiri, status SELALU 'Online'
+$online_pasien = true;
 
-if (!empty($pasienData['last_seen'])) {
-    $lastSeen = strtotime($pasienData['last_seen']);
-    if ((time() - $lastSeen) <= 15) {
-        $online_pasien = true;
+// Sinkronisasi last_seen dan status di database pasien saat render
+if (!empty($pasien['id'])) {
+    $now = date('Y-m-d H:i:s');
+    $sidebarUpdate = ['last_seen' => $now];
+    if ($db->fieldExists('status', 'pasien')) {
+        $sidebarUpdate['status'] = 'online';
     }
+    $db->table('pasien')->where('id', $pasien['id'])->update($sidebarUpdate);
 }
 ?>
 
@@ -159,8 +163,19 @@ if (!empty($pasienData['last_seen'])) {
 .status-online { 
     color: #059669; 
 }
+.status-online .status-dot {
+    color: #10b981;
+    font-size: 10px;
+    display: inline-block;
+    filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.7));
+}
 .status-offline { 
     color: #94a3b8; 
+}
+.status-offline .status-dot {
+    color: #94a3b8;
+    font-size: 10px;
+    display: inline-block;
 }
 
 /* MENU STYLING */
@@ -354,8 +369,8 @@ if (!empty($pasienData['last_seen'])) {
         <img src="<?= base_url('assets/profile/' . $foto) ?>" alt="Foto Pasien" onerror="this.src='<?= base_url('assets/profile/default-hero.png') ?>'">
         <div>
             <h4><?= esc($pasien['nama'] ?? 'Pasien'); ?></h4>
-            <div class="status-indicator <?= $online_pasien ? 'status-online' : 'status-offline' ?>">
-                <span style="font-size: 8px;">●</span> <?= $online_pasien ? 'Online Terhubung' : 'Offline' ?>
+            <div class="status-indicator <?= $online_pasien ? 'status-online' : 'status-offline' ?>" id="patientStatusBadge">
+                <span class="status-dot">●</span> <span id="patientStatusLabel"><?= $online_pasien ? 'Online' : 'Offline' ?></span>
             </div>
         </div>
     </div>
@@ -405,3 +420,42 @@ if (!empty($pasienData['last_seen'])) {
         </a>
     </div>
 </aside>
+
+<script>
+// Heartbeat Otomatis Status Online Pasien
+(function() {
+    function pingPasienOnline() {
+        if (navigator.onLine) {
+            fetch("<?= base_url('pasien/updateLastSeen') ?>", {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                cache: 'no-store'
+            }).then(function(res) {
+                return res.json();
+            }).then(function(data) {
+                var badge = document.getElementById('patientStatusBadge');
+                var label = document.getElementById('patientStatusLabel');
+                if (badge && label && data.status === 'ok') {
+                    badge.classList.remove('status-offline');
+                    badge.classList.add('status-online');
+                    label.textContent = 'Online';
+                }
+            }).catch(function(err) {
+                // Background heartbeat fallback
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            pingPasienOnline();
+            setInterval(pingPasienOnline, 15000);
+        });
+    } else {
+        pingPasienOnline();
+        setInterval(pingPasienOnline, 15000);
+    }
+})();
+</script>

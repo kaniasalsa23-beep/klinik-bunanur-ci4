@@ -18,6 +18,8 @@ class PasienModel extends Model
         'no_hp',
         'alamat',
         'foto',
-        'password'
+        'password',
+        'status',
+        'last_seen'
     ];
 }

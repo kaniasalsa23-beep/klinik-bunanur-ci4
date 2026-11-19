@@ -258,11 +258,13 @@ public function loginForm()
         session()->regenerate(true);
 
         // Update status online pasien
+        $loginUpdate = ['last_seen' => date('Y-m-d H:i:s')];
+        if ($this->db->fieldExists('status', 'pasien')) {
+            $loginUpdate['status'] = 'online';
+        }
         $this->db->table('pasien')
             ->where('id', $pasien['id'])
-            ->update([
-                'last_seen' => date('Y-m-d H:i:s')
-            ]);
+            ->update($loginUpdate);
 
         // Simpan sesi login
         $this->session->set('pasien', [
@@ -313,6 +315,16 @@ public function loginForm()
         if (!session()->has('pasien')) {
             return redirect()->to('/login_pasien');
         }
+
+        $idPasien = (int)session()->get('pasien')['id'];
+
+        // Segarkan last_seen dan status pasien di database
+        $now = date('Y-m-d H:i:s');
+        $dashUpdate = ['last_seen' => $now];
+        if ($this->db->fieldExists('status', 'pasien')) {
+            $dashUpdate['status'] = 'online';
+        }
+        $this->db->table('pasien')->where('id', $idPasien)->update($dashUpdate);
 
         // Query status bidan secara dinamis (apakah ada bidan online siaga)
         $onlineBidan = $this->db
@@ -1430,6 +1442,33 @@ public function updateLastSeen()
     ]);
 }
 
+public function updateLastSeenPasien()
+{
+    if (!session()->has('pasien')) {
+        return $this->response->setJSON([
+            'status'  => 'error',
+            'message' => 'Unauthorized'
+        ])->setStatusCode(401);
+    }
+
+    $id = (int)session()->get('pasien')['id'];
+    $now = date('Y-m-d H:i:s');
+
+    $updateData = ['last_seen' => $now];
+    if ($this->db->fieldExists('status', 'pasien')) {
+        $updateData['status'] = 'online';
+    }
+
+    $this->db->table('pasien')
+        ->where('id', $id)
+        ->update($updateData);
+
+    return $this->response->setJSON([
+        'status'    => 'ok',
+        'last_seen' => $now
+    ]);
+}
+
 public function pasienAktif()
 {
     $db = \Config\Database::connect();
@@ -2228,6 +2267,13 @@ public function logout()
         $pasien = session()->get('pasien');
         $username = $pasien['username'] ?? 'unknown';
         $id = $pasien['id'] ?? null;
+        if ($id) {
+            $logoutUpdate = ['last_seen' => date('Y-m-d H:i:s')];
+            if ($this->db->fieldExists('status', 'pasien')) {
+                $logoutUpdate['status'] = 'offline';
+            }
+            $this->db->table('pasien')->where('id', $id)->update($logoutUpdate);
+        }
         log_message('info', "[SECURITY] Pasien logout: username='{$username}', id='{$id}', IP=" . $this->request->getIPAddress());
     }
 
